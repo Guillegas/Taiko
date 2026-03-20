@@ -1,27 +1,30 @@
-# Taiko - Car Dealership SaaS & AI Assistant 🚗🤖
+# Taiko - Adaptable AI Management SaaS 🚀🤖
 
-Taiko is a modern car dealership Software as a Service (SaaS) project developed as a TFG (Trabajo de Fin de Grado). It integrates a robust traditional dealership management system with advanced AI capabilities, including a RAG (Retrieval-Augmented Generation) system for an intelligent vehicle search chatbot.
+Taiko is a powerful and versatile Software as a Service (SaaS) platform designed to empower small to medium businesses across any industry. It provides a robust core for database management, customer interactions, and deeply integrated AI-driven automation.
 
-## ✨ Features
-- **AI-Powered Chatbot (RAG):** Intelligent assistant that uses OpenAI and vector search (Embeddings) to understand user needs and recommend vehicles based on their natural language queries.
-- **Vehicle Management:** Full capability to manage cars, including body types (carrocería), fuel types (combustible), environmental tags (etiqueta ambiental), and image handling.
-- **CSV Data Import:** Bulk import capabilities for vehicle data through CSV files.
-- **User Profiles & Authentication:** Secure JWT-based authentication system with custom user profiles.
-- **Chat History Export:** Ability to save and export user conversations with the AI.
+**🚗 Current Implementation: Car Dealership Use Case**  
+*This repository serves as a practical, fully-featured example of Taiko adapted specifically for the automotive sector (developed as my TFG - Trabajo de Fin de Grado). It demonstrates how the system's core architecture can be tailored to manage very specific inventory (like vehicles) and use AI to assist customers in finding exactly what they need based on natural language.*
+
+## ✨ Core Platform Capabilities
+- **Adaptable Database Management:** A robust backend architecture (PostgreSQL + Hibernate) ready to model, store, and serve any type of inventory, product catalog, or service portfolio.
+- **AI-Powered Client Assistants (RAG):** An intelligent, conversational chatbot powered by OpenAI and vector embeddings. It understands customer natural language queries and matches them semantically with the business's specific catalog.
+- **Bulk Data Import:** Quickly scalable via CSV file imports, allowing rapid context updates and deployment for new business niches.
+- **User & Role Management:** Secure JWT-based authentication system with custom user profiles, permissions, and roles (Administrators, Clients, etc.).
+- **Interaction Tracking:** Chat history saving and exporting. This allows businesses to seamlessly analyze customer needs, track engagements, and improve operations.
 
 ## 🛠️ Technology Stack
-- **Backend:** Java, Spring Boot, Spring AI, Spring Security (JWT)
-- **Database:** PostgreSQL (with `pgvector` for embedding similarity searches) & Hibernate JPA
-- **AI Integration:** OpenAI API (`text-embedding-3-small` for vector calculation)
+- **Backend Core:** Java 17+, Spring Boot, Spring Security (JWT)
+- **AI Engine:** Spring AI, OpenAI API (`text-embedding-3-small` for vector calculation)
+- **Database:** PostgreSQL with the `pgvector` extension (crucial for semantic similarity searches) & Hibernate JPA
 - **Frontend / UI:** React (Projected)
 
 ## 🚀 How to Run Locally
 
 ### 1. Database Setup
-Ensure you have PostgreSQL running locally with a database named `taiko_db`. You will need to configure the credentials in `application.properties` and ensure the database has the `pgvector` extension enabled for the AI searches to work correctly.
+Ensure you have PostgreSQL running locally with a database named `taiko_db`. You will need to configure your own credentials in `application.properties` and ensure the database has the `pgvector` extension enabled for the AI searches to work correctly.
 
 ### 2. Environment Variables (OpenAI API Key)
-The project requires an OpenAI API key for the embedding generation and chatbot features. To run it safely without exposing your key:
+The project requires an OpenAI API key for the embedding generation and chatbot features. To run it safely without exposing your static key:
 - **VS Code:** Add your key in the `.vscode/launch.json` file inside the `env` object:
   ```json
   "env": {
