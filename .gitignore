@@ -1,0 +1,8 @@
+# Ignore VS Code local configurations with secrets
+.vscode/launch.json
+
+# You can also ignore the environment files if you ever create them
+.env
+.env.*
+application-local.properties
+application-dev.properties
