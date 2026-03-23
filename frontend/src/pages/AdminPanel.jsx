@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Edit2, Trash2, Search, X, ImagePlus } from 'lucide-react';
+import { ArrowLeft, Plus, Edit2, Trash2, Search, X, ImagePlus, Upload, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const API_URL = 'http://localhost:8080/api';
@@ -36,6 +36,12 @@ export default function AdminPanel() {
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const csvInputRef = useRef(null);
 
   const fetchCars = () => {
     fetch(`${API_URL}/cars`)
@@ -186,6 +192,28 @@ export default function AdminPanel() {
     }
   };
 
+  const handleImport = async () => {
+    if (!importFile) return;
+    setImporting(true);
+    setImportResult(null);
+    const fd = new FormData();
+    fd.append('file', importFile);
+    try {
+      const res = await fetch(`${API_URL}/cars/import`, {
+        method: 'POST',
+        headers: authHeader(),
+        body: fd,
+      });
+      const text = await res.text();
+      setImportResult({ ok: res.ok, message: text });
+      if (res.ok) fetchCars();
+    } catch {
+      setImportResult({ ok: false, message: 'Error de conexión al importar.' });
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const formatPrice = (price) => new Intl.NumberFormat('es-ES').format(price) + '€';
 
   return (
@@ -200,9 +228,17 @@ export default function AdminPanel() {
           <h1 className="text-3xl font-bold">Panel de Administración</h1>
           <p className="text-muted text-sm mt-1">{cars.length} vehículos en total</p>
         </div>
-        <button className="btn-primary shadow-md" onClick={openAddModal}>
-          <Plus size={18} /> Añadir Vehículo
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => { setShowImportModal(true); setImportFile(null); setImportResult(null); }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+          >
+            <Upload size={17} /> Importar CSV
+          </button>
+          <button className="btn-primary shadow-md" onClick={openAddModal}>
+            <Plus size={18} /> Añadir Vehículo
+          </button>
+        </div>
       </div>
 
       {/* Search bar */}
@@ -288,6 +324,75 @@ export default function AdminPanel() {
           </tbody>
         </table>
       </div>
+
+      {/* Import CSV Modal */}
+      {showImportModal && (
+        <div className="modal-overlay" onClick={() => setShowImportModal(false)}>
+          <div className="card" style={{ maxWidth: '480px', width: '100%', padding: 0 }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: '24px 28px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 className="text-xl font-bold text-main">Importar vehículos desde CSV</h3>
+              <button onClick={() => setShowImportModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20} /></button>
+            </div>
+
+            <div style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Formato esperado */}
+              <div style={{ background: 'var(--bg-hover)', borderRadius: '10px', padding: '16px', border: '1px solid var(--border-color)' }}>
+                <p className="text-sm font-bold text-main" style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <FileText size={15} /> Formato esperado (CSV con cabecera):
+                </p>
+                <code style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.7, display: 'block' }}>
+                  Marca, Modelo, Version, Precio, Kilometros, Color, Descripcion, CarroceriaId
+                </code>
+                <p className="text-xs text-muted" style={{ marginTop: '8px' }}>
+                  La primera fila es la cabecera y se omite. CarroceriaId es opcional.
+                </p>
+              </div>
+
+              {/* Selector de archivo */}
+              <div>
+                <input
+                  ref={csvInputRef}
+                  type="file"
+                  accept=".csv"
+                  style={{ display: 'none' }}
+                  onChange={e => { setImportFile(e.target.files[0] || null); setImportResult(null); }}
+                />
+                <button
+                  onClick={() => csvInputRef.current.click()}
+                  style={{ width: '100%', padding: '14px', border: '2px dashed var(--border-color)', borderRadius: '10px', background: 'var(--bg-hover)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}
+                >
+                  <Upload size={22} />
+                  <span className="text-sm font-medium">{importFile ? importFile.name : 'Seleccionar archivo .csv'}</span>
+                </button>
+              </div>
+
+              {/* Resultado */}
+              {importResult && (
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '14px', borderRadius: '10px', background: importResult.ok ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)', border: `1px solid ${importResult.ok ? '#10B981' : 'var(--danger)'}` }}>
+                  {importResult.ok
+                    ? <CheckCircle2 size={18} color="#10B981" style={{ flexShrink: 0, marginTop: '2px' }} />
+                    : <AlertCircle size={18} color="var(--danger)" style={{ flexShrink: 0, marginTop: '2px' }} />}
+                  <p className="text-sm font-medium" style={{ color: importResult.ok ? '#10B981' : 'var(--danger)', margin: 0 }}>{importResult.message}</p>
+                </div>
+              )}
+
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => setShowImportModal(false)} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-hover)', color: 'var(--text-muted)', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>
+                  Cerrar
+                </button>
+                <button
+                  onClick={handleImport}
+                  disabled={!importFile || importing}
+                  className="btn-primary"
+                  style={{ opacity: !importFile || importing ? 0.5 : 1 }}
+                >
+                  {importing ? 'Importando...' : 'Importar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirm Modal */}
       {deleteConfirm && (
