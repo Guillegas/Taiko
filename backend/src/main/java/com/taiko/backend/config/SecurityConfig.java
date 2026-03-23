@@ -42,6 +42,15 @@ public class SecurityConfig {
 
                 // Endpoints del ChatBot -> PÚBLICOS
                 .requestMatchers("/api/chat/**").permitAll()
+
+                // Endpoints de datos de catálogo (carrocerías, transmisiones, etc.) -> PÚBLICOS
+                .requestMatchers(HttpMethod.GET, "/api/catalogo/**").permitAll()
+
+                // Endpoint de subida de imágenes -> PÚBLICO (usado desde el admin panel)
+                .requestMatchers(HttpMethod.POST, "/api/upload/**").permitAll()
+
+                // Servir imágenes subidas -> PÚBLICO
+                .requestMatchers("/uploads/**").permitAll()
                 
                 // Endpoints POST/PUT/DELETE de coches -> SOLO AUTENTICADOS
                 .requestMatchers(HttpMethod.POST, "/api/cars/**").authenticated()
