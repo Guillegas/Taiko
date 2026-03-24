@@ -57,8 +57,8 @@ export default function Navbar({ theme, setTheme }) {
         <div className="nav-links">
           {navLinks.map((link) => (
             link.hash ? (
-              <a 
-                key={link.name} 
+              <a
+                key={link.name}
                 href={`#${link.hash}`}
                 className="nav-link"
                 onClick={(e) => handleHashNavigation(e, link)}
@@ -66,10 +66,10 @@ export default function Navbar({ theme, setTheme }) {
                 {link.name}
               </a>
             ) : (
-              <Link 
-                key={link.name} 
-                to={link.path} 
-                className={`nav-link ${location.pathname === link.path ? 'active' : ''}`}
+              <Link
+                key={link.name}
+                to={link.path}
+                className={`nav-link ${location.pathname === link.path || (link.path !== '/' && location.pathname.startsWith(link.path)) ? 'active' : ''}`}
               >
                 {link.name}
               </Link>
@@ -84,16 +84,16 @@ export default function Navbar({ theme, setTheme }) {
 
           {user ? (
             <div className="user-menu">
-              <Link to="/perfil" className="user-info">
+              <span className="user-info" style={{ cursor: 'default' }}>
                 <User size={18} />
                 <span>{user.username}</span>
-              </Link>
+              </span>
               {user.role === 'admin' && (
-                <Link to="/admin" className="settings-link hover-primary" style={{ color: 'var(--primary)', fontWeight: 700 }}>
+                <Link to="/admin" className={`settings-link hover-primary ${location.pathname === '/admin' ? 'text-primary' : 'text-muted'}`} style={{ fontWeight: location.pathname === '/admin' ? 700 : undefined }}>
                   <LayoutDashboard size={16} /> Panel Admin
                 </Link>
               )}
-              <Link to="/perfil" className="settings-link text-muted hover-primary">
+              <Link to="/perfil" className={`settings-link hover-primary ${location.pathname === '/perfil' ? 'text-primary' : 'text-muted'}`} style={{ fontWeight: location.pathname === '/perfil' ? 700 : undefined }}>
                  <Settings size={18} /> Ajustes
               </Link>
               <button onClick={logout} className="logout-link text-muted hover-danger">

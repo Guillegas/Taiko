@@ -21,35 +21,35 @@ export default function Profile() {
           <h1 className="text-3xl font-bold mb-2">Mi Perfil</h1>
           <p className="text-muted">Gestiona tu información personal y preferencias</p>
         </div>
-        <div className="w-16 h-16 rounded-full bg-primary-light flex items-center justify-center text-primary border border-primary-light">
+        <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', border: '1px solid var(--primary)', flexShrink: 0 }}>
           <User size={32} />
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="card mb-6 flex divide-x divide-border">
+      <div className="card mb-6 flex divide-x divide-border" style={{ padding: 0, overflow: 'hidden' }}>
         <button
-          className={`flex-1 py-4 flex flex-col items-center justify-center gap-2 transition-colors ${activeTab === 'personales' ? 'text-primary border-b-2 border-primary' : 'text-muted hover:bg-hover'}`}
+          style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, border: 'none', cursor: 'pointer', background: activeTab === 'personales' ? 'var(--primary-light)' : 'transparent', color: activeTab === 'personales' ? 'var(--primary)' : 'var(--text-muted)', borderBottom: activeTab === 'personales' ? '2px solid var(--primary)' : '2px solid transparent', fontFamily: 'var(--font-ui)', fontWeight: 500, fontSize: '0.875rem', transition: 'all 0.2s' }}
           onClick={() => setActiveTab('personales')}
         >
           <User size={20} />
-          <span className="text-sm font-medium">Datos Personales</span>
+          Datos Personales
         </button>
         {user?.role !== 'admin' && (
           <button
-            className={`flex-1 py-4 flex flex-col items-center justify-center gap-2 transition-colors ${activeTab === 'bancarios' ? 'text-primary border-b-2 border-primary' : 'text-muted hover:bg-hover'}`}
+            style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, border: 'none', cursor: 'pointer', background: activeTab === 'bancarios' ? 'var(--primary-light)' : 'transparent', color: activeTab === 'bancarios' ? 'var(--primary)' : 'var(--text-muted)', borderBottom: activeTab === 'bancarios' ? '2px solid var(--primary)' : '2px solid transparent', fontFamily: 'var(--font-ui)', fontWeight: 500, fontSize: '0.875rem', transition: 'all 0.2s' }}
             onClick={() => setActiveTab('bancarios')}
           >
             <CreditCard size={20} />
-            <span className="text-sm font-medium">Datos Bancarios</span>
+            Datos Bancarios
           </button>
         )}
         <button
-          className={`flex-1 py-4 flex flex-col items-center justify-center gap-2 transition-colors ${activeTab === 'seguridad' ? 'text-primary border-b-2 border-primary' : 'text-muted hover:bg-hover'}`}
+          style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, border: 'none', cursor: 'pointer', background: activeTab === 'seguridad' ? 'var(--primary-light)' : 'transparent', color: activeTab === 'seguridad' ? 'var(--primary)' : 'var(--text-muted)', borderBottom: activeTab === 'seguridad' ? '2px solid var(--primary)' : '2px solid transparent', fontFamily: 'var(--font-ui)', fontWeight: 500, fontSize: '0.875rem', transition: 'all 0.2s' }}
           onClick={() => setActiveTab('seguridad')}
         >
           <Lock size={20} />
-          <span className="text-sm font-medium">Seguridad</span>
+          Seguridad
         </button>
       </div>
 
@@ -64,6 +64,7 @@ export default function Profile() {
 }
 
 function PersonalDataForm({ token }) {
+  const { updateUsername } = useAuth();
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -107,14 +108,18 @@ function PersonalDataForm({ token }) {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ nombre: form.nombre, telefono: form.telefono }),
       });
-      if (!res.ok) throw new Error('Error al guardar');
+      if (!res.ok) {
+        const msg = await res.text().catch(() => '');
+        throw new Error(msg || `Error ${res.status}`);
+      }
       const updated = await res.json();
       setProfile(updated);
+      if (updated.nombre) updateUsername(updated.nombre);
       setEditing(false);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
-    } catch {
-      setError('No se pudieron guardar los cambios.');
+    } catch (err) {
+      setError(err.message || 'No se pudieron guardar los cambios.');
     } finally {
       setSaving(false);
     }
@@ -127,23 +132,16 @@ function PersonalDataForm({ token }) {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold">Información Personal</h2>
         {!editing ? (
-          <button className="flex items-center text-primary font-medium gap-2 text-sm" onClick={handleEdit}>
-            <Edit2 size={16} /> Editar
+          <button className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.875rem' }} onClick={handleEdit}>
+            <Edit2 size={15} /> Editar
           </button>
         ) : (
           <div className="flex gap-2">
-            <button
-              onClick={handleCancel}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-hover)', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
-            >
-              <X size={14} /> Cancelar
+            <button className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.875rem', background: 'var(--bg-hover)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }} onClick={handleCancel}>
+              <X size={15} /> Cancelar
             </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '8px', border: '1px solid var(--primary)', background: 'var(--primary)', color: 'white', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
-            >
-              <Check size={14} /> {saving ? 'Guardando...' : 'Guardar'}
+            <button className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.875rem' }} onClick={handleSave} disabled={saving}>
+              <Check size={15} /> {saving ? 'Guardando...' : 'Guardar'}
             </button>
           </div>
         )}
@@ -246,12 +244,15 @@ function SecurityForm({ token }) {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ password: form.passwordNueva }),
       });
-      if (!res.ok) throw new Error('Error al cambiar la contraseña');
+      if (!res.ok) {
+        const msg = await res.text().catch(() => '');
+        throw new Error(msg || `Error ${res.status}`);
+      }
       setSuccess(true);
       setForm({ passwordActual: '', passwordNueva: '', passwordConfirm: '' });
       setTimeout(() => setSuccess(false), 3000);
-    } catch {
-      setError('No se pudo cambiar la contraseña.');
+    } catch (err) {
+      setError(err.message || 'No se pudo cambiar la contraseña.');
     } finally {
       setSaving(false);
     }

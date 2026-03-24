@@ -134,6 +134,11 @@
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .spinner { animation: spin 1s linear infinite; }
 
+@keyframes bounceArrow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(10px); }
+}
+
 /* ---------------------------------
    INVENTORY & CHAT
 --------------------------------- */

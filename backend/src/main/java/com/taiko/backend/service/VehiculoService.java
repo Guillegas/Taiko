@@ -22,6 +22,9 @@ import org.springframework.web.server.ResponseStatusException;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvValidationException;
 
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -464,5 +467,90 @@ public class VehiculoService {
         }
 
         return String.format("Importación completada. Exitosos: %d, Fallidos: %d", exitosos, fallidos);
+    }
+
+    /**
+     * Importación masiva de vehículos desde un archivo Excel (.xlsx).
+     * Formato esperado (mismas columnas que CSV):
+     * Marca | Modelo | Version | Precio | Kilometros | Color | Descripcion | CarroceriaId
+     */
+    public String importVehiclesFromExcel(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El archivo Excel está vacío.");
+        }
+
+        int exitosos = 0;
+        int fallidos = 0;
+
+        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
+            Sheet sheet = workbook.getSheetAt(0);
+            boolean firstRow = true;
+
+            for (Row row : sheet) {
+                if (firstRow) {
+                    firstRow = false; // Saltar cabecera
+                    continue;
+                }
+                if (row == null) continue;
+
+                try {
+                    String marca = getCellString(row, 0);
+                    String modelo = getCellString(row, 1);
+                    String version = getCellString(row, 2);
+                    String precioStr = getCellString(row, 3);
+                    String kmStr = getCellString(row, 4);
+                    String color = getCellString(row, 5);
+                    String descripcion = getCellString(row, 6);
+                    String carroceriaIdStr = getCellString(row, 7);
+
+                    if (marca.isEmpty() && modelo.isEmpty()) continue;
+
+                    VehiculoRequestDTO dto = new VehiculoRequestDTO();
+                    dto.setMarca(marca);
+                    dto.setModelo(modelo);
+                    dto.setVersion(version);
+                    dto.setColor(color);
+                    dto.setDescripcion(descripcion);
+
+                    try { dto.setPrecio(new BigDecimal(precioStr)); }
+                    catch (NumberFormatException e) { dto.setPrecio(BigDecimal.ZERO); }
+
+                    try { dto.setKilometros(Integer.parseInt(kmStr)); }
+                    catch (NumberFormatException e) { dto.setKilometros(0); }
+
+                    if (!carroceriaIdStr.isEmpty()) {
+                        try { dto.setCarroceriaId(Integer.parseInt(carroceriaIdStr)); }
+                        catch (NumberFormatException ignored) {}
+                    }
+
+                    createVehiculo(dto);
+                    exitosos++;
+
+                } catch (Exception e) {
+                    System.err.println("Error procesando fila Excel: " + e.getMessage());
+                    fallidos++;
+                }
+            }
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Error leyendo el archivo Excel: " + e.getMessage());
+        }
+
+        return String.format("Importación completada. Exitosos: %d, Fallidos: %d", exitosos, fallidos);
+    }
+
+    private String getCellString(Row row, int col) {
+        Cell cell = row.getCell(col, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
+        if (cell == null) return "";
+        return switch (cell.getCellType()) {
+            case STRING -> cell.getStringCellValue().trim();
+            case NUMERIC -> {
+                if (DateUtil.isCellDateFormatted(cell)) yield "";
+                double val = cell.getNumericCellValue();
+                yield val == Math.floor(val) ? String.valueOf((long) val) : String.valueOf(val);
+            }
+            case BOOLEAN -> String.valueOf(cell.getBooleanCellValue());
+            default -> "";
+        };
     }
 }

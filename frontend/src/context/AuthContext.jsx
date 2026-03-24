@@ -39,8 +39,16 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('authUser');
   };
 
+  const updateUsername = (newUsername) => {
+    setUser(prev => {
+      const updated = { ...prev, username: newUsername };
+      localStorage.setItem('authUser', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoginModalOpen, setIsLoginModalOpen }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUsername, isLoginModalOpen, setIsLoginModalOpen }}>
       {children}
     </AuthContext.Provider>
   );

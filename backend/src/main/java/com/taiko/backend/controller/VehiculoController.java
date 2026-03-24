@@ -112,11 +112,17 @@ public class VehiculoController {
 
     // ─────────────────────────────────────────────────────────────────────────
     // POST /api/cars/import
-    // Sube un archivo CSV y carga múltiples vehículos en masa.
+    // Sube un archivo CSV o Excel (.xlsx) y carga múltiples vehículos en masa.
     // ─────────────────────────────────────────────────────────────────────────
     @PostMapping("/import")
-    public ResponseEntity<String> importVehiclesFromCsv(@RequestParam("file") MultipartFile file) {
-        String resultado = vehiculoService.importVehiclesFromCsv(file);
+    public ResponseEntity<String> importVehicles(@RequestParam("file") MultipartFile file) {
+        String nombre = file.getOriginalFilename() != null ? file.getOriginalFilename().toLowerCase() : "";
+        String resultado;
+        if (nombre.endsWith(".xlsx")) {
+            resultado = vehiculoService.importVehiclesFromExcel(file);
+        } else {
+            resultado = vehiculoService.importVehiclesFromCsv(file);
+        }
         return ResponseEntity.ok(resultado);
     }
 }

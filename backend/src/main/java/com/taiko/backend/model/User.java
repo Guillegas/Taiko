@@ -25,9 +25,10 @@ public class User {
     @Column(name = "telefono")
     private String telefono;
 
-    // Hibernate will try to map Enum.STRING to Postgres custom enum 'rol_usuario'
+    // updatable = false evita que Hibernate incluya 'rol' en el UPDATE SQL,
+    // ya que Postgres no acepta casting automático de varchar a rol_usuario
     @Enumerated(EnumType.STRING)
-    @Column(name = "rol", columnDefinition = "rol_usuario")
+    @Column(name = "rol", columnDefinition = "rol_usuario", updatable = false)
     private RolUsuario rol = RolUsuario.admin;
 
     public enum RolUsuario {

@@ -233,7 +233,7 @@ export default function AdminPanel() {
             onClick={() => { setShowImportModal(true); setImportFile(null); setImportResult(null); }}
             style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
           >
-            <Upload size={17} /> Importar CSV
+            <Upload size={17} /> Importar CSV / Excel
           </button>
           <button className="btn-primary shadow-md" onClick={openAddModal}>
             <Plus size={18} /> Añadir Vehículo
@@ -338,13 +338,13 @@ export default function AdminPanel() {
               {/* Formato esperado */}
               <div style={{ background: 'var(--bg-hover)', borderRadius: '10px', padding: '16px', border: '1px solid var(--border-color)' }}>
                 <p className="text-sm font-bold text-main" style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <FileText size={15} /> Formato esperado (CSV con cabecera):
+                  <FileText size={15} /> Columnas requeridas (fila 1 = cabecera):
                 </p>
                 <code style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.7, display: 'block' }}>
-                  Marca, Modelo, Version, Precio, Kilometros, Color, Descripcion, CarroceriaId
+                  Marca · Modelo · Version · Precio · Kilometros · Color · Descripcion · CarroceriaId
                 </code>
                 <p className="text-xs text-muted" style={{ marginTop: '8px' }}>
-                  La primera fila es la cabecera y se omite. CarroceriaId es opcional.
+                  Formatos admitidos: <strong>.csv</strong> y <strong>.xlsx</strong> (Excel). CarroceriaId es opcional.
                 </p>
               </div>
 
@@ -353,7 +353,7 @@ export default function AdminPanel() {
                 <input
                   ref={csvInputRef}
                   type="file"
-                  accept=".csv"
+                  accept=".csv,.xlsx"
                   style={{ display: 'none' }}
                   onChange={e => { setImportFile(e.target.files[0] || null); setImportResult(null); }}
                 />
@@ -362,7 +362,7 @@ export default function AdminPanel() {
                   style={{ width: '100%', padding: '14px', border: '2px dashed var(--border-color)', borderRadius: '10px', background: 'var(--bg-hover)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}
                 >
                   <Upload size={22} />
-                  <span className="text-sm font-medium">{importFile ? importFile.name : 'Seleccionar archivo .csv'}</span>
+                  <span className="text-sm font-medium">{importFile ? importFile.name : 'Seleccionar archivo .csv o .xlsx'}</span>
                 </button>
               </div>
 
