@@ -252,8 +252,21 @@ export default function Home() {
         </div>
 
         {/* Scroll arrow */}
-        <div style={{ position: 'absolute', bottom: '32px', left: '50%', transform: 'translateX(-50%)' }}>
-          <div style={{ animation: 'bounceArrow 1.8s ease-in-out infinite', color: 'white', opacity: 0.8 }}>
+        <div
+          style={{
+            position: "absolute",
+            bottom: "32px",
+            left: "50%",
+            transform: "translateX(-50%)",
+          }}
+        >
+          <div
+            style={{
+              animation: "bounceArrow 1.8s ease-in-out infinite",
+              color: "white",
+              opacity: 0.8,
+            }}
+          >
             <ChevronDown size={40} strokeWidth={1.5} />
           </div>
         </div>
@@ -263,7 +276,7 @@ export default function Home() {
       <section className="py-20 bg-main">
         <div className="page-container">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4 text-main">
+            <h2 className="text-3xl font-bold mb-4 text-main">
               Vehículos Premium
             </h2>
             <div style={{ padding: "10px" }}></div>
@@ -286,7 +299,10 @@ export default function Home() {
         id="servicios"
         style={{ padding: "80px 0", scrollMarginTop: "80px" }}
       >
-        <div className="page-container" style={{ maxWidth: "1000px" }}>
+        <div
+          className="page-container"
+          style={{ maxWidth: "1000px", marginTop: "-150px" }}
+        >
           <div className="text-center" style={{ marginBottom: "56px" }}>
             <p
               className="text-primary font-semibold text-sm uppercase tracking-wider m-0"
