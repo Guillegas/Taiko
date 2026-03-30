@@ -1,56 +1,117 @@
-# Taiko - Adaptable AI Management SaaS 🚀🤖
+<div align="center">
 
-Taiko is a powerful and versatile Software as a Service (SaaS) platform designed to empower small to medium businesses across any industry. It provides a robust core for database management, customer interactions, and deeply integrated AI-driven automation.
+# 🥁 Taiko
 
-**🚗 Current Implementation: Car Dealership Use Case**  
-_This repository serves as a practical, fully-featured example of Taiko adapted specifically for the automotive sector (developed as my TFG - Trabajo de Fin de Grado). It demonstrates how the system's core architecture can be tailored to manage very specific inventory (like vehicles) and use AI to assist customers in finding exactly what they need based on natural language._
+**AI-powered SaaS platform for small and medium businesses**
 
-## ✨ Core Platform Capabilities
+[![Java](https://img.shields.io/badge/Java_17+-ED8B00?style=flat-square&logo=openjdk&logoColor=white)](https://www.java.com/)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-6DB33F?style=flat-square&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL_+_pgvector-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
+[![OpenAI](https://img.shields.io/badge/OpenAI_API-412991?style=flat-square&logo=openai&logoColor=white)](https://openai.com/)
+[![React](https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 
-- **Adaptable Database Management:** A robust backend architecture (PostgreSQL + Hibernate) ready to model, store, and serve any type of inventory, product catalog, or service portfolio.
-- **AI-Powered Client Assistants (RAG):** An intelligent, conversational chatbot powered by OpenAI and vector embeddings. It understands customer natural language queries and matches them semantically with the business's specific catalog.
-- **Bulk Data Import:** Quickly scalable via CSV file imports, allowing rapid context updates and deployment for new business niches.
-- **User & Role Management:** Secure JWT-based authentication system with custom user profiles, permissions, and roles (Administrators, Clients, etc.).
-- **Interaction Tracking:** Chat history saving and exporting. This allows businesses to seamlessly analyze customer needs, track engagements, and improve operations.
+</div>
 
-## 🛠️ Technology Stack
+---
 
-- **Backend Core:** Java 17+, Spring Boot, Spring Security (JWT)
-- **AI Engine:** Spring AI, OpenAI API (`text-embedding-3-small` for vector calculation)
-- **Database:** PostgreSQL with the `pgvector` extension (crucial for semantic similarity searches) & Hibernate JPA
-- **Frontend / UI:** React (Projected)
+## What is Taiko?
 
-## 🚀 How to Run Locally
+Taiko is a full-stack SaaS platform that gives small businesses two things: a clean interface to manage their inventory or catalog, and an AI-powered chatbot that answers customer questions in natural language — using that same inventory as its knowledge base.
 
-### 1. Database Setup
+The AI layer is built on **Retrieval-Augmented Generation (RAG)**: when a customer asks a question, the system converts it to a vector embedding, searches for semantically similar items in the database using `pgvector`, and feeds the relevant context to the language model to generate a grounded, accurate response.
 
-Ensure you have PostgreSQL running locally with a database named `taiko_db`. You will need to configure your own credentials in `application.properties` and ensure the database has the `pgvector` extension enabled for the AI searches to work correctly.
+The platform is designed to be **industry-agnostic** — the core architecture adapts to any type of catalog or inventory. The current implementation is a fully-featured car dealership demo.
 
-### 2. Environment Variables (OpenAI API Key)
+---
 
-The project requires an OpenAI API key for the embedding generation and chatbot features. To run it safely without exposing your static key:
+## Architecture
 
-- **VS Code:** Add your key in the `.vscode/launch.json` file inside the `env` object:
-  ```json
-  "env": {
-      "OPENAI_API_KEY": "sk-your-openai-key-here"
-  }
-  ```
-- **Terminal:** `export OPENAI_API_KEY="sk-your-openai-key-here"`
+```
+┌─────────────────────────────────────────────────────────┐
+│                      React Frontend                      │
+│         (Admin dashboard + Customer chat widget)         │
+└───────────────────────┬─────────────────────────────────┘
+                        │ REST API (JWT-secured)
+┌───────────────────────▼─────────────────────────────────┐
+│                   Spring Boot Backend                    │
+│                                                          │
+│  ┌─────────────────┐      ┌──────────────────────────┐  │
+│  │  Business Logic │      │       RAG Engine          │  │
+│  │  (Spring MVC)   │      │  Spring AI + OpenAI API   │  │
+│  │  User & Roles   │      │  text-embedding-3-small   │  │
+│  │  CSV Import     │      │  Semantic vector search   │  │
+│  └────────┬────────┘      └────────────┬─────────────┘  │
+└───────────┼────────────────────────────┼────────────────┘
+            │                            │ pgvector similarity search
+┌───────────▼────────────────────────────▼────────────────┐
+│                     PostgreSQL + pgvector                │
+│          (Inventory · Users · Chat history · Embeddings) │
+└─────────────────────────────────────────────────────────┘
+```
 
-### 3. Running the Backend
+---
 
-Navigate to the backend folder and use the Maven wrapper:
+## Features
+
+- **RAG Chatbot** — customers query the inventory using natural language; the AI answers based on the actual business catalog, not hallucinations
+- **Inventory management** — full CRUD for catalog items with bulk CSV import
+- **User & role system** — JWT authentication with admin / client roles and permission scoping
+- **Conversation history** — all chat sessions are persisted and exportable for business analytics
+- **Adaptable core** — swap the inventory schema to deploy Taiko for any industry
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Backend | Java 17, Spring Boot, Spring Security (JWT), Hibernate JPA |
+| AI Engine | Spring AI, OpenAI API (`text-embedding-3-small`) |
+| Vector Search | PostgreSQL + `pgvector` extension |
+| Frontend | React, Tailwind CSS |
+| Build | Maven |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Java 17+
+- PostgreSQL with `pgvector` extension enabled
+- OpenAI API key
+
+### 1. Database setup
+
+```sql
+CREATE DATABASE taiko_db;
+-- Enable pgvector
+CREATE EXTENSION IF NOT EXISTS vector;
+```
+
+Configure your credentials in `backend/src/main/resources/application.properties`.
+
+### 2. Set your OpenAI API key
+
+```bash
+export OPENAI_API_KEY="sk-your-key-here"
+```
+
+Or add it to `.vscode/launch.json` under `env` if using VS Code.
+
+### 3. Run the backend
 
 ```bash
 cd backend
 ./mvnw spring-boot:run
 ```
 
-The backend API will start on `http://localhost:8080`.
+API available at `http://localhost:8080`.
 
-## 👨‍💻 Author
+---
+
+## Author
 
 **Guillermo Andújar Martínez**
-
-- 🔗 [LinkedIn](https://www.linkedin.com/in/guillermo-and%C3%BAjar-mart%C3%ADnez/?locale=en-US)
+[Portfolio](https://guillegas-dev.vercel.app/) · [LinkedIn](https://www.linkedin.com/in/guillermo-andújar-martínez/) · [guilleandumarti@gmail.com](mailto:guilleandumarti@gmail.com)
