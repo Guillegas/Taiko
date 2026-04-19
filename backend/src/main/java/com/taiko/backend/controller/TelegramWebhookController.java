@@ -4,6 +4,8 @@ import com.taiko.backend.model.ChatResponseDTO;
 import com.taiko.backend.model.Conversacion;
 import com.taiko.backend.model.Vehiculo;
 import com.taiko.backend.service.ChatbotService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +20,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @RestController
 @RequestMapping("/api/webhook/telegram")
 public class TelegramWebhookController {
+
+    private static final Logger log = LoggerFactory.getLogger(TelegramWebhookController.class);
 
     @Value("${telegram.bot.token:}")
     private String botToken;
@@ -94,7 +98,7 @@ public class TelegramWebhookController {
             }
 
         } catch (Exception e) {
-            System.err.println("Error procesando update de Telegram: " + e.getMessage());
+            log.error("Error procesando update de Telegram: {}", e.getMessage());
         }
         return ResponseEntity.ok().build();
     }
@@ -109,7 +113,7 @@ public class TelegramWebhookController {
         try {
             restTemplate.postForObject(url, body, Map.class);
         } catch (Exception e) {
-            System.err.println("Error enviando mensaje a Telegram: " + e.getMessage());
+            log.warn("Error enviando mensaje a Telegram (chatId={}): {}", chatId, e.getMessage());
         }
     }
 

@@ -12,6 +12,8 @@ import com.taiko.backend.repository.EquipamientoRepository;
 import com.taiko.backend.repository.ImagenRepository;
 import com.taiko.backend.model.Imagen;
 import com.taiko.backend.model.ImagenRequestDTO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -35,6 +37,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class VehiculoService {
+
+    private static final Logger log = LoggerFactory.getLogger(VehiculoService.class);
 
     @Autowired
     private VehiculoRepository vehiculoRepository;
@@ -62,6 +66,12 @@ public class VehiculoService {
 
     @Autowired
     private EmbeddingModel embeddingModel;
+
+    @Autowired
+    private org.springframework.ai.chat.model.ChatModel chatModel;
+
+    @Autowired
+    private com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     private static final String MODELO_IA = "text-embedding-3-small";
 
@@ -203,12 +213,6 @@ public class VehiculoService {
     // BUSCADOR SEMÁNTICO (SPRING AI + PGVECTOR)
     // ─────────────────────────────────────────────────────────────────────────
 
-    @Autowired
-    private org.springframework.ai.chat.model.ChatModel chatModel;
-
-    @Autowired
-    private com.fasterxml.jackson.databind.ObjectMapper objectMapper;
-
     /**
      * Busca los vehículos combinando búsqueda semántica (vectores) y un
      * filtro estricto con LLM para asegurar que se cumplen criterios como precio o color.
@@ -283,8 +287,8 @@ public class VehiculoService {
                     .collect(Collectors.toList());
 
         } catch (Exception e) {
-            // Si el LLM falla por lo que sea, devolvemos un top conservador por vectores
-            e.printStackTrace();
+            // Si el LLM falla, fallback conservador filtrando por umbral de similitud
+            log.warn("Filtro LLM fallido, aplicando fallback por similitud: {}", e.getMessage());
             return precandidatos.stream()
                 .filter(p -> p.getSimilitud() > 65.0)
                 .limit(limite)
@@ -308,11 +312,7 @@ public class VehiculoService {
             float[] vector = embeddingModel.embed(texto);
             String vectorString = toVectorString(vector);
             
-            // Borramos el viejo si existe (con try catch por simplicidad o podríamos usar una query)
-            try {
-                vehicleEmbeddingRepository.deleteById(v.getId()); // En realidad el ID del embedding es auto-generated UUID, no el del vehiculo, así que mejor no borrar y simplemente insertar.
-            } catch (Exception e) {}
-            
+            vehicleEmbeddingRepository.deleteByVehiculoId(v.getId());
             vehicleEmbeddingRepository.insertEmbedding(v.getId(), texto, MODELO_IA, vectorString);
             recalculados++;
         }
@@ -458,7 +458,7 @@ public class VehiculoService {
                     exitosos++;
 
                 } catch (Exception e) {
-                    System.err.println("Error procesando fila CSV: " + String.join(",", line) + " - " + e.getMessage());
+                    log.warn("Error procesando fila CSV [{}]: {}", String.join(",", line), e.getMessage());
                     fallidos++;
                 }
             }
@@ -528,7 +528,7 @@ public class VehiculoService {
                     exitosos++;
 
                 } catch (Exception e) {
-                    System.err.println("Error procesando fila Excel: " + e.getMessage());
+                    log.warn("Error procesando fila Excel: {}", e.getMessage());
                     fallidos++;
                 }
             }

@@ -59,14 +59,14 @@ export default function AdminPanel() {
     fetch(`${API_URL}/admin/users`, { headers: authHeader() })
       .then(r => r.json())
       .then(setUsers)
-      .catch(console.error);
+      .catch(() => {});
   };
 
   const fetchCars = () => {
     fetch(`${API_URL}/cars`)
       .then(res => res.json())
       .then(data => setCars(data.reverse()))
-      .catch(console.error);
+      .catch(() => {});
   };
 
   useEffect(() => {
@@ -205,8 +205,8 @@ export default function AdminPanel() {
     try {
       await fetch(`${API_URL}/cars/${id}`, { method: 'DELETE', headers: authHeader() });
       setCars(prev => prev.filter(c => c.id !== id));
-    } catch (err) {
-      console.error(err);
+    } catch {
+      // La UI ya no muestra el coche eliminado optimísticamente — no hay acción adicional
     } finally {
       setDeleteConfirm(null);
     }

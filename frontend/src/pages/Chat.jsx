@@ -5,7 +5,7 @@ import Markdown from 'react-markdown';
 import { useAuth } from '../context/AuthContext';
 
 const API_URL = import.meta.env.VITE_API_URL;
-const WELCOME_TEXT = '¡Hola! Soy el asistente virtual especialista de AutoElite. Estoy conectado a nuestro inventario en tiempo real. ¿En qué puedo ayudarte hoy para encontrar tu coche ideal?';
+const WELCOME_TEXT = '¡Hola! Soy el asistente virtual de Taiko Motors. Estoy conectado al inventario en tiempo real. ¿En qué puedo ayudarte para encontrar tu coche ideal?';
 
 export default function ChatPage() {
   const { user, setIsLoginModalOpen, setLoginModalTab } = useAuth();
@@ -220,7 +220,7 @@ export default function ChatPage() {
     const now = new Date().toLocaleString('es-ES');
     const html = `<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"/>
-<title>Conversación AutoElite - ${now}</title>
+<title>Conversación Taiko Motors - ${now}</title>
 <style>
   body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;color:#1e293b;}
   h1{font-size:1.4rem;border-bottom:2px solid #2563eb;padding-bottom:12px;margin-bottom:8px;}
@@ -232,7 +232,7 @@ export default function ChatPage() {
   .user .bubble{background:#2563eb;color:white;} .assistant .bubble{background:#f1f5f9;border:1px solid #e2e8f0;}
   @media print{body{margin:20px;}}
 </style></head><body>
-<h1>Conversación con Asistente AutoElite</h1>
+<h1>Conversación con Asistente Taiko Motors</h1>
 <div class="meta">Exportado el ${now}</div>
 ${messages.map(m => `<div class="msg ${m.role}"><div class="label">${m.role === 'user' ? 'Tú' : 'Asistente'}</div><div class="bubble">${m.text.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br/>')}</div></div>`).join('')}
 </body></html>`;
