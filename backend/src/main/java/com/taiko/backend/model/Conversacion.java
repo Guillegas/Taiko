@@ -1,5 +1,6 @@
 package com.taiko.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -12,13 +13,15 @@ public class Conversacion {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id")
-    private User usuario; // Puede ser nulo si permitimos chats anónimos
+    private User usuario;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vehiculo_contexto_id")
-    private Vehiculo vehiculoContexto; // Puede ser nulo. Vehículo del que se está hablando
+    private Vehiculo vehiculoContexto;
 
     private String canal = "web";
 

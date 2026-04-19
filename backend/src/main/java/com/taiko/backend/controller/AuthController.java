@@ -68,13 +68,45 @@ public class AuthController {
             return ResponseEntity.badRequest().body("El email de usuario ya existe.");
         }
 
-        // Insertar usando query nativa para evitar problemas con el ENUM rol_usuario de PostgreSQL
         userRepository.insertUserNative(
-            "Admin", 
-            authRequest.getUsername(), 
+            "Admin",
+            authRequest.getUsername(),
             passwordEncoder.encode(authRequest.getPassword())
         );
 
         return ResponseEntity.status(HttpStatus.CREATED).body("Usuario creado exitosamente.");
+    }
+
+    @PostMapping("/signup")
+    public ResponseEntity<?> signupUser(@RequestBody SignupRequest req) {
+        if (req.getEmail() == null || req.getPassword() == null || req.getNombre() == null || req.getTelefono() == null) {
+            return ResponseEntity.badRequest().body("Faltan campos obligatorios.");
+        }
+        if (userRepository.findByEmail(req.getEmail()).isPresent()) {
+            return ResponseEntity.badRequest().body("El email ya está registrado.");
+        }
+
+        userRepository.insertUserNativeAsUser(
+            req.getNombre(),
+            req.getEmail(),
+            passwordEncoder.encode(req.getPassword()),
+            req.getTelefono()
+        );
+
+        final UserDetails userDetails = userDetailsService.loadUserByUsername(req.getEmail());
+        final String jwt = jwtUtil.generateToken(userDetails);
+        User user = userRepository.findByEmail(req.getEmail()).orElseThrow();
+        return ResponseEntity.status(HttpStatus.CREATED).body(new AuthResponse(jwt, user.getEmail(), user.getRol().name()));
+    }
+
+    public static class SignupRequest {
+        private String nombre;
+        private String email;
+        private String password;
+        private String telefono;
+        public String getNombre() { return nombre; }
+        public String getEmail() { return email; }
+        public String getPassword() { return password; }
+        public String getTelefono() { return telefono; }
     }
 }

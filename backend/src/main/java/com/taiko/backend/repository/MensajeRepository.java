@@ -9,4 +9,10 @@ import java.util.List;
 @Repository
 public interface MensajeRepository extends JpaRepository<Mensaje, UUID> {
     List<Mensaje> findByConversacionIdOrderByFechaEnvioAsc(UUID conversacionId);
+    Mensaje findFirstByConversacionIdAndEmisorOrderByFechaEnvioAsc(UUID conversacionId, com.taiko.backend.model.EmisorMensaje emisor);
+    long countByConversacionId(UUID conversacionId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @jakarta.transaction.Transactional
+    void deleteByConversacionId(UUID conversacionId);
 }

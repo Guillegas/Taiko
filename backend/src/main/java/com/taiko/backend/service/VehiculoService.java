@@ -195,6 +195,7 @@ public class VehiculoService {
      */
     public void deleteVehiculo(UUID id) {
         getVehiculoById(id);
+        vehicleEmbeddingRepository.deleteByVehiculoId(id);
         vehiculoRepository.deleteById(id);
     }
 

@@ -11,12 +11,17 @@ import CarDetail from './pages/CarDetail';
 import ChatPage from './pages/Chat';
 import Profile from './pages/Profile';
 import AdminPanel from './pages/AdminPanel';
+import MisConversaciones from './pages/MisConversaciones';
 
 function AdminRoute({ children }) {
   const { user } = useAuth();
-  if (!user || user.role !== 'admin') {
-    return <Navigate to="/" replace />;
-  }
+  if (!user || user.role !== 'admin') return <Navigate to="/" replace />;
+  return children;
+}
+
+function ProtectedRoute({ children }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/" replace />;
   return children;
 }
 
@@ -39,6 +44,9 @@ function AppContent() {
           <Route path="/inventario/:id" element={<CarDetail />} />
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/perfil" element={<Profile />} />
+          <Route path="/mis-conversaciones" element={
+            <ProtectedRoute><MisConversaciones /></ProtectedRoute>
+          } />
           <Route path="/admin" element={
             <AdminRoute>
               <AdminPanel />

@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface ConversacionRepository extends JpaRepository<Conversacion, UUID> {
     List<Conversacion> findByUsuarioId(UUID usuarioId);
+    List<Conversacion> findByUsuarioIdOrderByFechaInicioDesc(UUID usuarioId);
+    java.util.Optional<Conversacion> findByIdAndUsuarioId(UUID id, UUID usuarioId);
 }

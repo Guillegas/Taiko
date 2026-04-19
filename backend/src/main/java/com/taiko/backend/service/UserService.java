@@ -5,8 +5,10 @@ import com.taiko.backend.model.UserProfileResponseDTO;
 import com.taiko.backend.model.UserProfileUpdateDTO;
 import com.taiko.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 
@@ -44,6 +46,12 @@ public class UserService {
         }
 
         if (updateDTO.getPassword() != null && !updateDTO.getPassword().trim().isEmpty()) {
+            if (updateDTO.getPasswordActual() == null || !passwordEncoder.matches(updateDTO.getPasswordActual(), user.getPassword())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña actual es incorrecta.");
+            }
+            if (updateDTO.getPassword().trim().length() < 8) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La nueva contraseña debe tener al menos 8 caracteres.");
+            }
             user.setPassword(passwordEncoder.encode(updateDTO.getPassword()));
         }
 

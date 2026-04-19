@@ -53,5 +53,9 @@ public interface VehicleEmbeddingRepository extends JpaRepository<VehicleEmbeddi
             @Param("vectorString") String vectorString,
             @Param("limite") int limite
     );
+
+    @Modifying
+    @Transactional
+    void deleteByVehiculoId(UUID vehiculoId);
 }
 

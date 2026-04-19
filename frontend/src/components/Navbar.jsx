@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { CarFront, User, Settings, LogOut, Sun, Moon, LayoutDashboard } from 'lucide-react';
+import { CarFront, User, Settings, LogOut, Sun, Moon, LayoutDashboard, MessageSquare } from 'lucide-react';
 
 export default function Navbar({ theme, setTheme }) {
   const { user, logout, setIsLoginModalOpen } = useAuth();
@@ -91,6 +91,11 @@ export default function Navbar({ theme, setTheme }) {
               {user.role === 'admin' && (
                 <Link to="/admin" className={`settings-link hover-primary ${location.pathname === '/admin' ? 'text-primary' : 'text-muted'}`} style={{ fontWeight: location.pathname === '/admin' ? 700 : undefined }}>
                   <LayoutDashboard size={16} /> Panel Admin
+                </Link>
+              )}
+              {user.role !== 'admin' && (
+                <Link to="/mis-conversaciones" className={`settings-link hover-primary ${location.pathname === '/mis-conversaciones' ? 'text-primary' : 'text-muted'}`} style={{ fontWeight: location.pathname === '/mis-conversaciones' ? 700 : undefined }}>
+                  <MessageSquare size={16} /> Mis Chats
                 </Link>
               )}
               <Link to="/perfil" className={`settings-link hover-primary ${location.pathname === '/perfil' ? 'text-primary' : 'text-muted'}`} style={{ fontWeight: location.pathname === '/perfil' ? 700 : undefined }}>
