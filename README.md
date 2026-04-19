@@ -14,7 +14,7 @@
 [![Deployed on Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?style=flat-square&logo=vercel&logoColor=white)](https://vercel.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 
-**[🚀 Live Demo](https://frontend-xi-navy-88.vercel.app)** · **[API](https://backend-production-85da.up.railway.app)**
+**[🚗 Live Demo](https://frontend-xi-navy-88.vercel.app)**
 
 </div>
 
