@@ -1,14 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, ArrowLeft } from 'lucide-react';
+import { Search, ArrowLeft, Loader2 } from 'lucide-react';
 import { SharedCarCard } from './Home';
 
-const API_URL = 'http://localhost:8080/api';
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function Inventory() {
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [semanticResults, setSemanticResults] = useState(null); // null = sin búsqueda activa
+  const [searching, setSearching] = useState(false);
+  const debounceRef = useRef(null);
 
   // Filters state
   const [filters, setFilters] = useState({
@@ -29,16 +32,40 @@ export default function Inventory() {
       .catch(console.error);
   }, []);
 
-  // Compute derived state for filtered results
-  const filteredCars = cars.filter(car => {
-    let match = true;
-    if (searchTerm) {
-      const lowerTheme = searchTerm.toLowerCase();
-      if (!car.marca.toLowerCase().includes(lowerTheme) && 
-          !car.modelo.toLowerCase().includes(lowerTheme)) {
-        match = false;
-      }
+  // Búsqueda semántica con debounce
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    if (!searchTerm.trim()) {
+      setSemanticResults(null);
+      return;
     }
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(`${API_URL}/cars/search`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: searchTerm }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setSemanticResults(data.map(r => r.vehiculo));
+        } else {
+          setSemanticResults([]);
+        }
+      } catch {
+        setSemanticResults(null);
+      } finally {
+        setSearching(false);
+      }
+    }, 500);
+  }, [searchTerm]);
+
+  const baseList = semanticResults !== null ? semanticResults : cars;
+
+  // Filtros locales sobre el resultado base
+  const filteredCars = baseList.filter(car => {
+    let match = true;
     if (filters.tipo !== 'Todos' && car.carroceria?.nombre !== filters.tipo) match = false;
     if (filters.transmision !== 'Todos' && car.transmision?.nombre !== filters.transmision) match = false;
 
@@ -73,6 +100,7 @@ export default function Inventory() {
       color: 'Todos'
     });
     setSearchTerm('');
+    setSemanticResults(null);
   };
 
   return (
@@ -89,15 +117,20 @@ export default function Inventory() {
 
       {/* Global Search Bar */}
       <div className="search-bar" style={{ marginBottom: '32px', maxWidth: '100%' }}>
-        <Search size={18} className="text-muted" style={{ flexShrink: 0 }} />
+        {searching ? <Loader2 size={18} className="text-primary spinner" style={{ flexShrink: 0 }} /> : <Search size={18} className="text-muted" style={{ flexShrink: 0 }} />}
         <input
           type="text"
-          placeholder="Buscar por marca o modelo..."
+          placeholder="Describe el coche que buscas... (ej: SUV eléctrico familiar por menos de 40.000€)"
           className="search-input"
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
         />
       </div>
+      {semanticResults !== null && !searching && (
+        <p className="text-muted mb-4" style={{ fontSize: '0.85rem' }}>
+          Búsqueda inteligente activa · {semanticResults.length} resultado{semanticResults.length !== 1 ? 's' : ''} encontrado{semanticResults.length !== 1 ? 's' : ''}
+        </p>
+      )}
 
       {/* Two Column Layout */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '32px' }}>
@@ -191,7 +224,7 @@ export default function Inventory() {
 
         {/* Catalog Grid */}
         <div style={{ flex: 1, minWidth: '300px' }}>
-          <p className="text-muted mb-6">{filteredCars.length} vehículos encontrados</p>
+          <p className="text-muted mb-6">{filteredCars.length} vehículo{filteredCars.length !== 1 ? 's' : ''} {semanticResults !== null ? 'coincidentes' : 'en total'}</p>
           
           {loading ? (
              <p className="text-muted">Cargando catálogo...</p>

@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Edit2, Trash2, Search, X, ImagePlus, Upload, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Plus, Edit2, Trash2, Search, X, ImagePlus, Upload, FileText, CheckCircle2, AlertCircle, Users, Car } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-const API_URL = 'http://localhost:8080/api';
+const API_URL = import.meta.env.VITE_API_URL;
 const FALLBACK_IMAGE = 'https://placehold.co/100x100/1e293b/94a3b8?text=Auto';
 
 const EMPTY_FORM = {
@@ -43,6 +43,25 @@ export default function AdminPanel() {
   const [importResult, setImportResult] = useState(null);
   const csvInputRef = useRef(null);
 
+  const [activeTab, setActiveTab] = useState('vehiculos');
+  const [users, setUsers] = useState([]);
+  const [userDeleteConfirm, setUserDeleteConfirm] = useState(null);
+  const [userSearch, setUserSearch] = useState('');
+  const [userRoleFilter, setUserRoleFilter] = useState('todos');
+  const [userStatusFilter, setUserStatusFilter] = useState('todos');
+  const [userEditModal, setUserEditModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [userForm, setUserForm] = useState({ nombre: '', email: '', telefono: '', rol: 'cliente', activo: true });
+  const [userSaving, setUserSaving] = useState(false);
+  const [userError, setUserError] = useState('');
+
+  const fetchUsers = () => {
+    fetch(`${API_URL}/admin/users`, { headers: authHeader() })
+      .then(r => r.json())
+      .then(setUsers)
+      .catch(console.error);
+  };
+
   const fetchCars = () => {
     fetch(`${API_URL}/cars`)
       .then(res => res.json())
@@ -52,6 +71,7 @@ export default function AdminPanel() {
 
   useEffect(() => {
     fetchCars();
+    fetchUsers();
     fetch(`${API_URL}/catalogo/carrocerias`).then(r => r.json()).then(setCarrocerias).catch(() => {});
     fetch(`${API_URL}/catalogo/transmisiones`).then(r => r.json()).then(setTransmisiones).catch(() => {});
     fetch(`${API_URL}/catalogo/combustibles`).then(r => r.json()).then(setCombustibles).catch(() => {});
@@ -214,6 +234,43 @@ export default function AdminPanel() {
     }
   };
 
+  const filteredUsers = users.filter(u => {
+    const matchSearch = `${u.nombre} ${u.email}`.toLowerCase().includes(userSearch.toLowerCase());
+    const matchRole = userRoleFilter === 'todos' || u.rol === userRoleFilter;
+    const matchStatus = userStatusFilter === 'todos' || (userStatusFilter === 'activo' ? u.activo : !u.activo);
+    return matchSearch && matchRole && matchStatus;
+  });
+
+  const openUserEdit = (u) => {
+    setEditingUser(u);
+    setUserForm({ nombre: u.nombre, email: u.email, telefono: u.telefono || '', rol: u.rol, activo: u.activo });
+    setUserError('');
+    setUserEditModal(true);
+  };
+
+  const handleUserEdit = async (e) => {
+    e.preventDefault();
+    setUserSaving(true);
+    setUserError('');
+    try {
+      const res = await fetch(`${API_URL}/admin/users/${editingUser.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify(userForm),
+      });
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg || 'Error al guardar');
+      }
+      setUserEditModal(false);
+      fetchUsers();
+    } catch (err) {
+      setUserError(err.message);
+    } finally {
+      setUserSaving(false);
+    }
+  };
+
   const formatPrice = (price) => new Intl.NumberFormat('es-ES').format(price) + '€';
 
   return (
@@ -226,21 +283,42 @@ export default function AdminPanel() {
             <ArrowLeft size={16} className="mr-2" /> Volver al inicio
           </Link>
           <h1 className="text-3xl font-bold">Panel de Administración</h1>
-          <p className="text-muted text-sm mt-1">{cars.length} vehículos en total</p>
+          <p className="text-muted text-sm mt-1">
+            {activeTab === 'vehiculos' ? `${cars.length} vehículos en total` : `${users.length} usuarios registrados`}
+          </p>
         </div>
-        <div className="flex gap-3">
-          <button
-            onClick={() => { setShowImportModal(true); setImportFile(null); setImportResult(null); }}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
-          >
-            <Upload size={17} /> Importar CSV / Excel
-          </button>
-          <button className="btn-primary shadow-md" onClick={openAddModal}>
-            <Plus size={18} /> Añadir Vehículo
-          </button>
-        </div>
+        {activeTab === 'vehiculos' && (
+          <div className="flex gap-3">
+            <button
+              onClick={() => { setShowImportModal(true); setImportFile(null); setImportResult(null); }}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-main)', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+            >
+              <Upload size={17} /> Importar CSV / Excel
+            </button>
+            <button className="btn-primary shadow-md" onClick={openAddModal}>
+              <Plus size={18} /> Añadir Vehículo
+            </button>
+          </div>
+        )}
       </div>
 
+      {/* Tabs */}
+      <div className="card mb-6 flex divide-x divide-border" style={{ padding: 0, overflow: 'hidden' }}>
+        <button
+          style={{ flex: 1, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none', cursor: 'pointer', background: activeTab === 'vehiculos' ? 'var(--primary-light)' : 'transparent', color: activeTab === 'vehiculos' ? 'var(--primary)' : 'var(--text-muted)', borderBottom: activeTab === 'vehiculos' ? '2px solid var(--primary)' : '2px solid transparent', fontFamily: 'var(--font-ui)', fontWeight: 600, fontSize: '0.875rem', transition: 'all 0.2s' }}
+          onClick={() => setActiveTab('vehiculos')}
+        >
+          <Car size={17} /> Vehículos
+        </button>
+        <button
+          style={{ flex: 1, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none', cursor: 'pointer', background: activeTab === 'usuarios' ? 'var(--primary-light)' : 'transparent', color: activeTab === 'usuarios' ? 'var(--primary)' : 'var(--text-muted)', borderBottom: activeTab === 'usuarios' ? '2px solid var(--primary)' : '2px solid transparent', fontFamily: 'var(--font-ui)', fontWeight: 600, fontSize: '0.875rem', transition: 'all 0.2s' }}
+          onClick={() => setActiveTab('usuarios')}
+        >
+          <Users size={17} /> Usuarios
+        </button>
+      </div>
+
+      {activeTab === 'vehiculos' && (<>
       {/* Search bar */}
       <div className="search-bar" style={{ maxWidth: '400px', marginBottom: '24px' }}>
         <Search size={18} className="text-muted" />
@@ -257,7 +335,7 @@ export default function AdminPanel() {
         )}
       </div>
 
-      {/* Table */}
+      {/* Vehicles Table */}
       <div className="card overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -273,9 +351,7 @@ export default function AdminPanel() {
           </thead>
           <tbody className="divide-y divide-border">
             {filtered.length === 0 && (
-              <tr>
-                <td colSpan={7} className="p-8 text-center text-muted">No se encontraron vehículos</td>
-              </tr>
+              <tr><td colSpan={7} className="p-8 text-center text-muted">No se encontraron vehículos</td></tr>
             )}
             {filtered.map((car, idx) => {
               const imageSrc = car.imagenes && car.imagenes.length > 0 ? car.imagenes[0].url : FALLBACK_IMAGE;
@@ -283,12 +359,7 @@ export default function AdminPanel() {
                 <tr key={car.id || idx} className="hover:bg-hover/50 transition-colors">
                   <td className="p-4 px-6 text-sm font-medium text-muted">{idx + 1}</td>
                   <td className="p-4 flex items-center gap-4">
-                    <img
-                      src={imageSrc}
-                      alt={car.modelo}
-                      className="w-16 h-12 rounded object-cover border border-border"
-                      onError={e => { e.target.src = FALLBACK_IMAGE; }}
-                    />
+                    <img src={imageSrc} alt={car.modelo} className="w-16 h-12 rounded object-cover border border-border" onError={e => { e.target.src = FALLBACK_IMAGE; }} />
                     <div>
                       <p className="font-bold text-sm text-main">{car.marca} {car.modelo}</p>
                       <p className="text-xs text-muted leading-tight">{car.version}</p>
@@ -298,22 +369,14 @@ export default function AdminPanel() {
                   <td className="p-4 text-sm font-bold">{formatPrice(car.precio)}</td>
                   <td className="p-4 text-sm text-muted">{car.kilometros?.toLocaleString('es-ES') || '0'} km</td>
                   <td className="p-4">
-                    <span className={`badge ${car.disponible ? 'success' : 'warning'}`}>
-                      {car.disponible ? 'Disponible' : 'Reservado'}
-                    </span>
+                    <span className={`badge ${car.disponible ? 'success' : 'warning'}`}>{car.disponible ? 'Disponible' : 'Reservado'}</span>
                   </td>
                   <td className="p-4">
                     <div className="flex justify-center gap-2">
-                      <button
-                        onClick={() => openEditModal(car)}
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '8px', border: '1px solid var(--primary)', background: 'var(--primary-light)', color: 'var(--primary)', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
-                      >
+                      <button onClick={() => openEditModal(car)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '8px', border: '1px solid var(--primary)', background: 'var(--primary-light)', color: 'var(--primary)', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>
                         <Edit2 size={14} /> Editar
                       </button>
-                      <button
-                        onClick={() => setDeleteConfirm(car)}
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '8px', border: '1px solid var(--danger)', background: 'rgba(239,68,68,0.08)', color: 'var(--danger)', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
-                      >
+                      <button onClick={() => setDeleteConfirm(car)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '8px', border: '1px solid var(--danger)', background: 'rgba(239,68,68,0.08)', color: 'var(--danger)', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>
                         <Trash2 size={14} /> Eliminar
                       </button>
                     </div>
@@ -324,6 +387,92 @@ export default function AdminPanel() {
           </tbody>
         </table>
       </div>
+      </>)}
+
+      {activeTab === 'usuarios' && (<>
+      {/* Filtros usuarios */}
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+        <div className="search-bar" style={{ flex: '1 1 220px', minWidth: 0 }}>
+          <Search size={18} className="text-muted" />
+          <input
+            className="search-input"
+            placeholder="Buscar por nombre o email..."
+            value={userSearch}
+            onChange={e => setUserSearch(e.target.value)}
+          />
+          {userSearch && (
+            <button onClick={() => setUserSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
+              <X size={16} className="text-muted" />
+            </button>
+          )}
+        </div>
+        <select
+          value={userRoleFilter}
+          onChange={e => setUserRoleFilter(e.target.value)}
+          className="input-field"
+          style={{ width: 'auto', minWidth: '140px' }}
+        >
+          <option value="todos">Todos los roles</option>
+          <option value="admin">Admin</option>
+          <option value="cliente">Cliente</option>
+        </select>
+        <select
+          value={userStatusFilter}
+          onChange={e => setUserStatusFilter(e.target.value)}
+          className="input-field"
+          style={{ width: 'auto', minWidth: '150px' }}
+        >
+          <option value="todos">Todos los estados</option>
+          <option value="activo">Activos</option>
+          <option value="inactivo">Inactivos</option>
+        </select>
+      </div>
+
+      <div className="card overflow-hidden">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-hover text-muted text-xs uppercase tracking-wider font-semibold border-b border-border">
+              <th className="p-4 px-6 w-16">#</th>
+              <th className="p-4">Nombre</th>
+              <th className="p-4">Email</th>
+              <th className="p-4">Teléfono</th>
+              <th className="p-4">Rol</th>
+              <th className="p-4">Estado</th>
+              <th className="p-4 text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {filteredUsers.length === 0 && (
+              <tr><td colSpan={7} className="p-8 text-center text-muted">No se encontraron usuarios</td></tr>
+            )}
+            {filteredUsers.map((u, idx) => (
+              <tr key={u.id} className="hover:bg-hover/50 transition-colors">
+                <td className="p-4 px-6 text-sm font-medium text-muted">{idx + 1}</td>
+                <td className="p-4 text-sm font-semibold text-main">{u.nombre}</td>
+                <td className="p-4 text-sm text-muted">{u.email}</td>
+                <td className="p-4 text-sm text-muted">{u.telefono || '—'}</td>
+                <td className="p-4">
+                  <span className={`badge ${u.rol === 'admin' ? 'warning' : 'success'}`}>{u.rol}</span>
+                </td>
+                <td className="p-4">
+                  <span className={`badge ${u.activo ? 'success' : 'danger'}`}>{u.activo ? 'Activo' : 'Inactivo'}</span>
+                </td>
+                <td className="p-4">
+                  <div className="flex justify-center gap-2">
+                    <button onClick={() => openUserEdit(u)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '8px', border: '1px solid var(--primary)', background: 'var(--primary-light)', color: 'var(--primary)', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>
+                      <Edit2 size={14} /> Editar
+                    </button>
+                    <button onClick={() => setUserDeleteConfirm(u)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '8px', border: '1px solid var(--danger)', background: 'rgba(239,68,68,0.08)', color: 'var(--danger)', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>
+                      <Trash2 size={14} /> Eliminar
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      </>)}
 
       {/* Import CSV Modal */}
       {showImportModal && (
@@ -394,7 +543,32 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {/* Delete Confirm Modal */}
+      {/* Delete User Confirm Modal */}
+      {userDeleteConfirm && (
+        <div className="modal-overlay" onClick={() => setUserDeleteConfirm(null)}>
+          <div className="card p-8" style={{ maxWidth: '420px', width: '100%' }} onClick={e => e.stopPropagation()}>
+            <h3 className="text-xl font-bold text-main mb-3">Eliminar usuario</h3>
+            <p className="text-muted mb-6">
+              ¿Seguro que quieres eliminar la cuenta de <strong className="text-main">{userDeleteConfirm.nombre}</strong> ({userDeleteConfirm.email})?
+              Esta acción no se puede deshacer.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button style={{ background: 'none', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '10px 20px', cursor: 'pointer', color: 'var(--text-main)', fontFamily: 'var(--font-ui)' }} onClick={() => setUserDeleteConfirm(null)}>
+                Cancelar
+              </button>
+              <button className="btn-primary" style={{ background: 'var(--danger)' }} onClick={async () => {
+                await fetch(`${API_URL}/admin/users/${userDeleteConfirm.id}`, { method: 'DELETE', headers: authHeader() });
+                setUsers(prev => prev.filter(u => u.id !== userDeleteConfirm.id));
+                setUserDeleteConfirm(null);
+              }}>
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Vehicle Confirm Modal */}
       {deleteConfirm && (
         <div className="modal-overlay" onClick={() => setDeleteConfirm(null)}>
           <div className="card p-8" style={{ maxWidth: '420px', width: '100%' }} onClick={e => e.stopPropagation()}>
@@ -414,6 +588,57 @@ export default function AdminPanel() {
                 Eliminar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {userEditModal && editingUser && (
+        <div className="modal-overlay" onClick={() => setUserEditModal(false)}>
+          <div className="card" style={{ maxWidth: '480px', width: '100%' }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: '24px 28px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 className="text-xl font-bold text-main">Editar usuario</h3>
+              <button onClick={() => setUserEditModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20} /></button>
+            </div>
+            <form onSubmit={handleUserEdit} style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label className="label">Nombre</label>
+                <input className="input-field" required value={userForm.nombre} onChange={e => setUserForm(f => ({ ...f, nombre: e.target.value }))} />
+              </div>
+              <div>
+                <label className="label">Email</label>
+                <input className="input-field" type="email" required value={userForm.email} onChange={e => setUserForm(f => ({ ...f, email: e.target.value }))} />
+              </div>
+              <div>
+                <label className="label">Teléfono</label>
+                <input className="input-field" value={userForm.telefono} onChange={e => setUserForm(f => ({ ...f, telefono: e.target.value }))} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label className="label">Rol</label>
+                  <select className="input-field" value={userForm.rol} onChange={e => setUserForm(f => ({ ...f, rol: e.target.value }))}>
+                    <option value="cliente">Cliente</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Estado</label>
+                  <select className="input-field" value={userForm.activo ? 'true' : 'false'} onChange={e => setUserForm(f => ({ ...f, activo: e.target.value === 'true' }))}>
+                    <option value="true">Activo</option>
+                    <option value="false">Inactivo</option>
+                  </select>
+                </div>
+              </div>
+              {userError && <p className="error-text">{userError}</p>}
+              <div className="flex gap-3 justify-end">
+                <button type="button" onClick={() => setUserEditModal(false)} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-hover)', color: 'var(--text-muted)', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn-primary" disabled={userSaving}>
+                  {userSaving ? 'Guardando...' : 'Guardar cambios'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

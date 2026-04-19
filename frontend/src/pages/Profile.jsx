@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ArrowLeft, User, CreditCard, Lock, Edit2, Check, X } from 'lucide-react';
+import { ArrowLeft, User, Lock, Edit2, Check, X } from 'lucide-react';
 
-const API_URL = 'http://localhost:8080/api';
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function Profile() {
   const { user } = useAuth();
@@ -35,15 +35,6 @@ export default function Profile() {
           <User size={20} />
           Datos Personales
         </button>
-        {user?.role !== 'admin' && (
-          <button
-            style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, border: 'none', cursor: 'pointer', background: activeTab === 'bancarios' ? 'var(--primary-light)' : 'transparent', color: activeTab === 'bancarios' ? 'var(--primary)' : 'var(--text-muted)', borderBottom: activeTab === 'bancarios' ? '2px solid var(--primary)' : '2px solid transparent', fontFamily: 'var(--font-ui)', fontWeight: 500, fontSize: '0.875rem', transition: 'all 0.2s' }}
-            onClick={() => setActiveTab('bancarios')}
-          >
-            <CreditCard size={20} />
-            Datos Bancarios
-          </button>
-        )}
         <button
           style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, border: 'none', cursor: 'pointer', background: activeTab === 'seguridad' ? 'var(--primary-light)' : 'transparent', color: activeTab === 'seguridad' ? 'var(--primary)' : 'var(--text-muted)', borderBottom: activeTab === 'seguridad' ? '2px solid var(--primary)' : '2px solid transparent', fontFamily: 'var(--font-ui)', fontWeight: 500, fontSize: '0.875rem', transition: 'all 0.2s' }}
           onClick={() => setActiveTab('seguridad')}
@@ -56,7 +47,6 @@ export default function Profile() {
       {/* Tab Content */}
       <div className="card p-8">
         {activeTab === 'personales' && <PersonalDataForm token={user?.token} />}
-        {activeTab === 'bancarios' && user?.role !== 'admin' && <BankDataForm />}
         {activeTab === 'seguridad' && <SecurityForm token={user?.token} />}
       </div>
     </div>
@@ -193,37 +183,6 @@ function PersonalDataForm({ token }) {
   );
 }
 
-function BankDataForm() {
-  return (
-    <div className="animate-fade-in-up">
-      <h2 className="text-xl font-bold mb-6">Datos Bancarios</h2>
-      <div className="alert-box info mb-6">
-        <CreditCard size={20} className="text-primary" />
-        <span className="text-sm font-medium text-primary">Tus datos bancarios están protegidos y encriptados. Solo se utilizarán para procesar pagos y devoluciones.</span>
-      </div>
-      <div className="flex flex-col gap-6">
-        <div className="form-group">
-          <label className="label">IBAN</label>
-          <input type="text" className="input-field font-mono" defaultValue="ES91 2100 0418 4502 0005 1332" />
-        </div>
-        <div className="form-group">
-          <label className="label">Titular de la Cuenta</label>
-          <input type="text" className="input-field" defaultValue="Juan García Martínez" />
-        </div>
-        <div className="form-group">
-          <label className="label">Entidad Bancaria</label>
-          <input type="text" className="input-field" defaultValue="Banco Santander" />
-        </div>
-        <div>
-          <button className="btn-primary mt-2">
-            <Lock size={16} /> Guardar Datos Bancarios
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function SecurityForm({ token }) {
   const [form, setForm] = useState({ passwordActual: '', passwordNueva: '', passwordConfirm: '' });
   const [saving, setSaving] = useState(false);
@@ -232,6 +191,14 @@ function SecurityForm({ token }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.passwordActual.trim()) {
+      setError('Introduce tu contraseña actual.');
+      return;
+    }
+    if (form.passwordNueva.length < 8) {
+      setError('La nueva contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
     if (form.passwordNueva !== form.passwordConfirm) {
       setError('Las contraseñas no coinciden.');
       return;
@@ -242,7 +209,7 @@ function SecurityForm({ token }) {
       const res = await fetch(`${API_URL}/users/me`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ password: form.passwordNueva }),
+        body: JSON.stringify({ password: form.passwordNueva, passwordActual: form.passwordActual }),
       });
       if (!res.ok) {
         const msg = await res.text().catch(() => '');
@@ -263,7 +230,7 @@ function SecurityForm({ token }) {
       <h2 className="text-xl font-bold mb-6">Seguridad y Contraseña</h2>
       <div className="alert-box warning mb-6">
         <Lock size={20} className="text-warning" />
-        <span className="text-sm font-medium text-warning">Asegúrate de usar una contraseña segura que contenga letras mayúsculas, minúsculas, números y símbolos.</span>
+        <span className="text-sm font-medium text-warning">La nueva contraseña debe tener al menos 8 caracteres.</span>
       </div>
       {success && (
         <div className="alert-box info mb-6">
@@ -273,6 +240,10 @@ function SecurityForm({ token }) {
       )}
       {error && <p className="error-text mb-4">{error}</p>}
       <form onSubmit={handleSubmit} className="flex flex-col gap-6 mb-10">
+        <div className="form-group">
+          <label className="label">Contraseña Actual</label>
+          <input type="password" className="input-field" value={form.passwordActual} onChange={e => setForm(f => ({ ...f, passwordActual: e.target.value }))} required />
+        </div>
         <div className="form-group">
           <label className="label">Nueva Contraseña</label>
           <input type="password" className="input-field" value={form.passwordNueva} onChange={e => setForm(f => ({ ...f, passwordNueva: e.target.value }))} required />

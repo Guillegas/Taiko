@@ -31,6 +31,9 @@ public class User {
     @Column(name = "rol", columnDefinition = "rol_usuario", updatable = false)
     private RolUsuario rol = RolUsuario.admin;
 
+    @Column(name = "activo", nullable = false)
+    private boolean activo = true;
+
     public enum RolUsuario {
         admin, cliente
     }

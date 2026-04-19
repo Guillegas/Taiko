@@ -33,6 +33,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Endpoints de autenticación (Login y Registro) -> PÚBLICOS
                 .requestMatchers("/api/auth/**").permitAll()
+
+                // Webhook de Telegram -> PÚBLICO (Telegram llama desde sus servidores)
+                .requestMatchers("/api/webhook/telegram").permitAll()
                 
                 // Endpoints GET de coches -> PÚBLICOS
                 .requestMatchers(HttpMethod.GET, "/api/cars/**").permitAll()
@@ -43,8 +46,19 @@ public class SecurityConfig {
                 // Endpoint de búsqueda -> PÚBLICO
                 .requestMatchers(HttpMethod.POST, "/api/cars/search").permitAll()
 
-                // Endpoints del ChatBot -> PÚBLICOS
-                .requestMatchers("/api/chat/**").permitAll()
+                // Endpoints del ChatBot -> PÚBLICOS (excepto los de usuario autenticado)
+                .requestMatchers(HttpMethod.POST, "/api/chat/start").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/chat/*/message").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/chat/*/history").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/chat/*/export/txt").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/chat/*/export/json").permitAll()
+
+                // Historial personal y borrado de conversaciones -> AUTENTICADOS
+                .requestMatchers(HttpMethod.GET, "/api/chat/mis-conversaciones").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/chat/conversaciones/*").authenticated()
+
+                // Endpoints de administración -> AUTENTICADOS (admin verificado en el controlador)
+                .requestMatchers("/api/admin/**").authenticated()
 
                 // Endpoints de datos de catálogo (carrocerías, transmisiones, etc.) -> PÚBLICOS
                 .requestMatchers(HttpMethod.GET, "/api/catalogo/**").permitAll()

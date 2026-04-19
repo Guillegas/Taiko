@@ -21,11 +21,14 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con email: " + username));
 
-        // En Spring Security las autoridades (roles) se pueden pasar en el 3er parámetro
+        if (!user.isActivo()) {
+            throw new UsernameNotFoundException("Cuenta desactivada");
+        }
+
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPassword(),
-                new ArrayList<>() // roles vacíos por simplicidad, todos son admin
+                new ArrayList<>()
         );
     }
 }

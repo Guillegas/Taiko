@@ -1,7 +1,7 @@
 import { createContext, useContext, useState } from 'react';
 
 const AuthContext = createContext();
-const API_URL = 'http://localhost:8080/api';
+const API_URL = import.meta.env.VITE_API_URL;
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
@@ -13,6 +13,7 @@ export function AuthProvider({ children }) {
     }
   });
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [loginModalTab, setLoginModalTab] = useState('login');
 
   const login = async (username, password) => {
     try {
@@ -34,6 +35,28 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const register = async (nombre, email, password, telefono) => {
+    try {
+      const res = await fetch(`${API_URL}/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, email, password, telefono }),
+      });
+      if (!res.ok) {
+        const msg = await res.text();
+        return { success: false, error: msg };
+      }
+      const data = await res.json();
+      const userData = { username: data.username, role: data.role, token: data.token };
+      setUser(userData);
+      localStorage.setItem('authUser', JSON.stringify(userData));
+      setIsLoginModalOpen(false);
+      return { success: true };
+    } catch {
+      return { success: false, error: 'Error de conexión.' };
+    }
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('authUser');
@@ -48,7 +71,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, updateUsername, isLoginModalOpen, setIsLoginModalOpen }}>
+    <AuthContext.Provider value={{ user, login, register, logout, updateUsername, isLoginModalOpen, setIsLoginModalOpen, loginModalTab, setLoginModalTab }}>
       {children}
     </AuthContext.Provider>
   );

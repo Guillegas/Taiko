@@ -18,7 +18,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 
-const API_URL = "http://localhost:8080/api";
+const API_URL = import.meta.env.VITE_API_URL;
 const FALLBACK_IMAGE =
   "https://placehold.co/800x600/1a1a2e/e0e0e0?text=Sin+Imagen";
 
