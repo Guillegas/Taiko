@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Check, ShieldAlert, BadgeInfo, Send, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Check, ShieldAlert, BadgeInfo, Send, MessageCircle, ChevronLeft, ChevronRight, X, ZoomIn } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL;
 const FALLBACK_IMAGE = 'https://placehold.co/1200x800/1a1a2e/e0e0e0?text=Sin+Imagen';
@@ -9,8 +9,6 @@ export default function CarDetail() {
   const { id } = useParams();
   const [car, setCar] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeImage, setActiveImage] = useState(0);
-
   useEffect(() => {
     fetch(`${API_URL}/cars/${id}`)
       .then(res => {
@@ -93,27 +91,7 @@ export default function CarDetail() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
 
           {/* Gallery */}
-          <div>
-            <div className="w-full bg-hover rounded-xl overflow-hidden shadow-md mb-4" style={{ height: '400px' }}>
-              <img
-                src={images[activeImage]}
-                alt={`${car.marca} ${car.modelo}`}
-                className="w-full h-full object-cover"
-                onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_IMAGE; }}
-              />
-            </div>
-            <div className="flex gap-4 overflow-x-auto pb-2">
-              {images.map((url, idx) => (
-                <div
-                  key={idx}
-                  className={`w-24 h-24 rounded-lg overflow-hidden shrink-0 cursor-pointer border-2 transition-colors ${activeImage === idx ? 'border-primary' : 'border-transparent'}`}
-                  onClick={() => setActiveImage(idx)}
-                >
-                  <img src={url} alt={`Thumbnail ${idx}`} className="w-full h-full object-cover" onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_IMAGE; }} />
-                </div>
-              ))}
-            </div>
-          </div>
+          <Gallery images={images} carName={`${car.marca} ${car.modelo}`} />
 
           {/* Description */}
           <div>
@@ -200,6 +178,108 @@ export default function CarDetail() {
       </div>
 
     </div>
+  );
+}
+
+function Gallery({ images, carName }) {
+  const [active, setActive] = useState(0);
+  const [lightbox, setLightbox] = useState(false);
+
+  const prev = useCallback(() => setActive(i => (i - 1 + images.length) % images.length), [images.length]);
+  const next = useCallback(() => setActive(i => (i + 1) % images.length), [images.length]);
+
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e) => {
+      if (e.key === 'ArrowLeft') prev();
+      if (e.key === 'ArrowRight') next();
+      if (e.key === 'Escape') setLightbox(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightbox, prev, next]);
+
+  return (
+    <>
+      {/* Main image */}
+      <div style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', background: 'var(--bg-hover)', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}>
+        <div style={{ height: '440px', cursor: 'zoom-in' }} onClick={() => setLightbox(true)}>
+          <img
+            src={images[active]}
+            alt={carName}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'opacity 0.2s' }}
+            onError={e => { e.target.onerror = null; e.target.src = FALLBACK_IMAGE; }}
+          />
+        </div>
+
+        {/* Zoom hint */}
+        <div style={{ position: 'absolute', top: 12, right: 12, background: 'rgba(0,0,0,0.45)', borderRadius: '8px', padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 5, color: 'white', fontSize: '0.75rem', pointerEvents: 'none' }}>
+          <ZoomIn size={14} /> Ver ampliada
+        </div>
+
+        {/* Counter */}
+        <div style={{ position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.5)', color: 'white', borderRadius: '999px', padding: '4px 14px', fontSize: '0.8rem', fontWeight: 600, letterSpacing: '0.05em' }}>
+          {active + 1} / {images.length}
+        </div>
+
+        {/* Arrows */}
+        {images.length > 1 && (
+          <>
+            <button onClick={prev} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.45)', border: 'none', borderRadius: '50%', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', transition: 'background 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.75)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.45)'}>
+              <ChevronLeft size={22} />
+            </button>
+            <button onClick={next} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.45)', border: 'none', borderRadius: '50%', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', transition: 'background 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.75)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.45)'}>
+              <ChevronRight size={22} />
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Thumbnails */}
+      {images.length > 1 && (
+        <div style={{ display: 'flex', gap: 10, marginTop: 12, overflowX: 'auto', paddingBottom: 4 }}>
+          {images.map((url, idx) => (
+            <div key={idx} onClick={() => setActive(idx)}
+              style={{ flexShrink: 0, width: 88, height: 66, borderRadius: 10, overflow: 'hidden', cursor: 'pointer',
+                border: active === idx ? '2.5px solid var(--primary)' : '2.5px solid transparent',
+                opacity: active === idx ? 1 : 0.6, transition: 'all 0.15s', boxShadow: active === idx ? '0 2px 8px rgba(37,99,235,0.25)' : 'none' }}>
+              <img src={url} alt={`Foto ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                onError={e => { e.target.onerror = null; e.target.src = FALLBACK_IMAGE; }} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setLightbox(false)}>
+          <button onClick={() => setLightbox(false)} style={{ position: 'absolute', top: 20, right: 24, background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
+            <X size={22} />
+          </button>
+          <div style={{ position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)', color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>
+            {active + 1} / {images.length} · ESC para cerrar · ← → para navegar
+          </div>
+          {images.length > 1 && (
+            <>
+              <button onClick={e => { e.stopPropagation(); prev(); }} style={{ position: 'absolute', left: 24, background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 52, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
+                <ChevronLeft size={28} />
+              </button>
+              <button onClick={e => { e.stopPropagation(); next(); }} style={{ position: 'absolute', right: 24, background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: 52, height: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
+                <ChevronRight size={28} />
+              </button>
+            </>
+          )}
+          <img src={images[active]} alt={carName} onClick={e => e.stopPropagation()}
+            style={{ maxWidth: '90vw', maxHeight: '85vh', objectFit: 'contain', borderRadius: 12, boxShadow: '0 8px 48px rgba(0,0,0,0.6)' }}
+            onError={e => { e.target.onerror = null; e.target.src = FALLBACK_IMAGE; }} />
+        </div>
+      )}
+    </>
   );
 }
 
