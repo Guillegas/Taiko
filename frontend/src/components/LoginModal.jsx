@@ -7,7 +7,20 @@ export default function LoginModal() {
   const { login, register, isLoginModalOpen, setIsLoginModalOpen, loginModalTab } = useAuth();
   const [tab, setTab] = useState(loginModalTab || 'login');
 
-  useEffect(() => { setTab(loginModalTab || 'login'); }, [loginModalTab, isLoginModalOpen]);
+  useEffect(() => {
+    setTab(loginModalTab || 'login');
+    if (isLoginModalOpen) {
+      setRegNombre('');
+      setRegEmail('');
+      setRegTelefono('');
+      setRegPassword('');
+      setRegConfirm('');
+      setRegError('');
+      setLoginEmail('');
+      setLoginPassword('');
+      setLoginError('');
+    }
+  }, [loginModalTab, isLoginModalOpen]);
 
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
