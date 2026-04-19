@@ -15,22 +15,25 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/chat")
-@CrossOrigin(origins = "*") // Para desarrollo
 public class ChatController {
 
-    @Autowired
-    private ChatbotService chatbotService;
+    private static final int MAX_MESSAGE_LENGTH = 2000;
 
-    @Autowired
-    private UserRepository userRepository;
+    @Autowired private ChatbotService chatbotService;
+    @Autowired private UserRepository userRepository;
 
-    // 1. Iniciar conversación (si hay JWT válido, se asocia al usuario)
+    /**
+     * Inicia una nueva conversación. Si hay JWT válido se asocia al usuario;
+     * de lo contrario se crea como conversación anónima.
+     */
     @PostMapping("/start")
     public ResponseEntity<Conversacion> startConversation() {
         User usuario = null;
@@ -38,18 +41,37 @@ public class ChatController {
         if (email != null && !"anonymousUser".equals(email)) {
             usuario = userRepository.findByEmail(email).orElse(null);
         }
-        Conversacion nuevaConv = chatbotService.iniciarConversacion(usuario);
-        return ResponseEntity.ok(nuevaConv);
+        return ResponseEntity.ok(chatbotService.iniciarConversacion(usuario));
     }
 
-    // Mis conversaciones (autenticado)
+    /** Envía un mensaje al chatbot y devuelve la respuesta del asistente. */
+    @PostMapping("/{conversacionId}/message")
+    public ResponseEntity<ChatResponseDTO> sendMessage(@PathVariable UUID conversacionId,
+                                                       @RequestBody ChatRequest request) {
+        if (request.getMensaje() == null || request.getMensaje().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El mensaje no puede estar vacío");
+        }
+        if (request.getMensaje().length() > MAX_MESSAGE_LENGTH) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "El mensaje supera el límite de " + MAX_MESSAGE_LENGTH + " caracteres");
+        }
+        return ResponseEntity.ok(chatbotService.enviarMensaje(conversacionId, request.getMensaje()));
+    }
+
+    /** Devuelve el historial completo de mensajes de una conversación. */
+    @GetMapping("/{conversacionId}/history")
+    public ResponseEntity<List<MensajeConVehiculosDTO>> getHistory(@PathVariable UUID conversacionId) {
+        return ResponseEntity.ok(chatbotService.obtenerHistorial(conversacionId));
+    }
+
+    /** Lista las conversaciones del usuario autenticado ordenadas por fecha. */
     @GetMapping("/mis-conversaciones")
     public ResponseEntity<List<ConversacionResumenDTO>> misConversaciones() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.ok(chatbotService.getMisConversaciones(email));
     }
 
-    // Borrar una conversación propia (autenticado)
+    /** Elimina una conversación propia. Verifica que pertenece al usuario autenticado. */
     @DeleteMapping("/conversaciones/{id}")
     public ResponseEntity<Void> deleteConversacion(@PathVariable UUID id) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -57,42 +79,29 @@ public class ChatController {
         return ResponseEntity.noContent().build();
     }
 
-    // 2. Enviar mensaje a la conversación
-    @PostMapping("/{conversacionId}/message")
-    public ResponseEntity<ChatResponseDTO> sendMessage(
-            @PathVariable UUID conversacionId,
-            @RequestBody ChatRequest request) {
-        ChatResponseDTO response = chatbotService.enviarMensaje(conversacionId, request.getMensaje());
-        return ResponseEntity.ok(response);
-    }
-
-    // 3. Recuperar historial (para cuando el frontend recarga la app)
-    @GetMapping("/{conversacionId}/history")
-    public ResponseEntity<List<MensajeConVehiculosDTO>> getHistory(@PathVariable UUID conversacionId) {
-        return ResponseEntity.ok(chatbotService.obtenerHistorial(conversacionId));
-    }
-
-    // 4. Exportar historial a TXT
+    /** Exporta el historial de una conversación en formato TXT. */
     @GetMapping("/{conversacionId}/export/txt")
-    public ResponseEntity<byte[]> exportHistorialTxt(@PathVariable UUID conversacionId) {
-        String contenido = chatbotService.exportConversacionToTxt(conversacionId);
-        byte[] bytes = contenido.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.TEXT_PLAIN);
-        headers.setContentDispositionFormData("attachment", "chat_export_" + conversacionId.toString().substring(0, 8) + ".txt");
-        headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
-        return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
+    public ResponseEntity<byte[]> exportTxt(@PathVariable UUID conversacionId) {
+        byte[] bytes = chatbotService.exportConversacionToTxt(conversacionId)
+                .getBytes(StandardCharsets.UTF_8);
+        return buildDownloadResponse(bytes, MediaType.TEXT_PLAIN,
+                "chat_" + conversacionId.toString().substring(0, 8) + ".txt");
     }
 
-    // 5. Exportar historial a JSON
+    /** Exporta el historial de una conversación en formato JSON. */
     @GetMapping("/{conversacionId}/export/json")
-    public ResponseEntity<byte[]> exportHistorialJson(@PathVariable UUID conversacionId) {
-        String contenido = chatbotService.exportConversacionToJson(conversacionId);
-        byte[] bytes = contenido.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    public ResponseEntity<byte[]> exportJson(@PathVariable UUID conversacionId) {
+        byte[] bytes = chatbotService.exportConversacionToJson(conversacionId)
+                .getBytes(StandardCharsets.UTF_8);
+        return buildDownloadResponse(bytes, MediaType.APPLICATION_JSON,
+                "chat_" + conversacionId.toString().substring(0, 8) + ".json");
+    }
+
+    private ResponseEntity<byte[]> buildDownloadResponse(byte[] data, MediaType type, String filename) {
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setContentDispositionFormData("attachment", "chat_export_" + conversacionId.toString().substring(0, 8) + ".json");
-        headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
-        return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
+        headers.setContentType(type);
+        headers.setContentDispositionFormData("attachment", filename);
+        headers.setCacheControl("no-cache");
+        return new ResponseEntity<>(data, headers, HttpStatus.OK);
     }
 }

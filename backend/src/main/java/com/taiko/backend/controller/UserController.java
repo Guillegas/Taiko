@@ -10,31 +10,21 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "*") // Para desarrollo FrontEnd
 public class UserController {
 
     @Autowired
     private UserService userService;
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // GET /api/users/me
-    // Devuelve los datos del usuario logueado usando el token JWT
-    // ─────────────────────────────────────────────────────────────────────────
+    /** Devuelve el perfil del usuario autenticado. */
     @GetMapping("/me")
     public ResponseEntity<UserProfileResponseDTO> getMyProfile() {
-        // Extraer el email (username) del Authentication Token
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.ok(userService.getUserProfile(email));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // PUT /api/users/me
-    // Actualiza los datos permitidos del usuario logueado
-    // ─────────────────────────────────────────────────────────────────────────
+    /** Actualiza nombre, teléfono o contraseña del usuario autenticado. */
     @PutMapping("/me")
-    public ResponseEntity<UserProfileResponseDTO> updateMyProfile(
-            @RequestBody UserProfileUpdateDTO updateDTO) {
-                
+    public ResponseEntity<UserProfileResponseDTO> updateMyProfile(@RequestBody UserProfileUpdateDTO updateDTO) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return ResponseEntity.ok(userService.updateUserProfile(email, updateDTO));
     }

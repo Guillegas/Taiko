@@ -10,58 +10,52 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Optional;
-
 @Service
 public class UserService {
 
-    @Autowired
-    private UserRepository userRepository;
+    @Autowired private UserRepository userRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
+    /** Devuelve el perfil público del usuario identificado por email. */
     public UserProfileResponseDTO getUserProfile(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-                
-        return new UserProfileResponseDTO(
-                user.getNombre(),
-                user.getEmail(),
-                user.getTelefono(),
-                user.getRol().name()
-        );
+        User user = findByEmailOrThrow(email);
+        return toDTO(user);
     }
 
-    public UserProfileResponseDTO updateUserProfile(String email, UserProfileUpdateDTO updateDTO) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+    /** Actualiza nombre, teléfono o contraseña. La contraseña actual es requerida para cambiarla. */
+    public UserProfileResponseDTO updateUserProfile(String email, UserProfileUpdateDTO dto) {
+        User user = findByEmailOrThrow(email);
 
-        if (updateDTO.getNombre() != null && !updateDTO.getNombre().trim().isEmpty()) {
-            user.setNombre(updateDTO.getNombre().trim());
+        if (dto.getNombre() != null && !dto.getNombre().isBlank()) {
+            user.setNombre(dto.getNombre().trim());
         }
 
-        if (updateDTO.getTelefono() != null) {
-            user.setTelefono(updateDTO.getTelefono().trim());
+        if (dto.getTelefono() != null) {
+            user.setTelefono(dto.getTelefono().trim());
         }
 
-        if (updateDTO.getPassword() != null && !updateDTO.getPassword().trim().isEmpty()) {
-            if (updateDTO.getPasswordActual() == null || !passwordEncoder.matches(updateDTO.getPasswordActual(), user.getPassword())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña actual es incorrecta.");
+        if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
+            if (dto.getPasswordActual() == null
+                    || !passwordEncoder.matches(dto.getPasswordActual(), user.getPassword())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña actual es incorrecta");
             }
-            if (updateDTO.getPassword().trim().length() < 8) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La nueva contraseña debe tener al menos 8 caracteres.");
+            if (dto.getPassword().trim().length() < 8) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "La nueva contraseña debe tener al menos 8 caracteres");
             }
-            user.setPassword(passwordEncoder.encode(updateDTO.getPassword()));
+            user.setPassword(passwordEncoder.encode(dto.getPassword()));
         }
 
-        User updatedUser = userRepository.save(user);
+        return toDTO(userRepository.save(user));
+    }
 
+    private User findByEmailOrThrow(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+    }
+
+    private UserProfileResponseDTO toDTO(User user) {
         return new UserProfileResponseDTO(
-                updatedUser.getNombre(),
-                updatedUser.getEmail(),
-                updatedUser.getTelefono(),
-                updatedUser.getRol().name()
-        );
+                user.getNombre(), user.getEmail(), user.getTelefono(), user.getRol().name());
     }
 }

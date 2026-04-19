@@ -43,7 +43,7 @@ function AppContent() {
           <Route path="/inventario" element={<Inventory />} />
           <Route path="/inventario/:id" element={<CarDetail />} />
           <Route path="/chat" element={<ChatPage />} />
-          <Route path="/perfil" element={<Profile />} />
+          <Route path="/perfil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/mis-conversaciones" element={
             <ProtectedRoute><MisConversaciones /></ProtectedRoute>
           } />
