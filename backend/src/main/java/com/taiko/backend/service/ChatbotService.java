@@ -45,6 +45,9 @@ public class ChatbotService {
 
         Responde siempre en español y sé conciso. No hables de temas ajenos a la compraventa de vehículos.
 
+        Recibirás una selección de vehículos del stock recuperados semánticamente según la consulta del usuario.
+        Trabaja únicamente con esos vehículos para hacer recomendaciones concretas.
+
         IMPORTANTE: Cuando recomiendes coches concretos del inventario, añade al final de tu respuesta
         (como última línea, sin nada después) esta etiqueta con los UUIDs separados por comas:
         [COCHES:uuid1,uuid2,uuid3]
@@ -122,23 +125,24 @@ public class ChatbotService {
         List<Message> springAiMessages = new ArrayList<>();
         springAiMessages.add(new SystemMessage(SYSTEM_PROMPT));
 
-        // Inyectar el inventario disponible como contexto del sistema
+        // Recuperar los vehículos más relevantes semánticamente (RAG con pgvector)
         try {
-            List<Vehiculo> inventario = vehiculoService.getAllVehiculos();
-            StringBuilder inventarioTexto = new StringBuilder("INVENTARIO ACTUAL EN STOCK:\n");
-            for (Vehiculo v : inventario) {
-                if (Boolean.TRUE.equals(v.getDisponible())) {
+            List<Vehiculo> relevantes = vehiculoService.buscarVehiculosRelevantes(textoUsuario, 8);
+            if (!relevantes.isEmpty()) {
+                StringBuilder contexto = new StringBuilder(
+                        "VEHÍCULOS DEL STOCK MÁS RELEVANTES PARA ESTA CONSULTA (seleccionados por similitud semántica):\n");
+                for (Vehiculo v : relevantes) {
                     String combustible = v.getCombustibles().isEmpty()
                             ? "Varios" : v.getCombustibles().get(0).getNombre();
-                    inventarioTexto.append(String.format(
+                    contexto.append(String.format(
                             "- ID: %s | %s %s | %.0f€ | %s | %d km | Motor: %s\n",
                             v.getId(), v.getMarca(), v.getModelo(),
                             v.getPrecio(), v.getColor(), v.getKilometros(), combustible));
                 }
+                springAiMessages.add(new SystemMessage(contexto.toString()));
             }
-            springAiMessages.add(new SystemMessage(inventarioTexto.toString()));
         } catch (Exception e) {
-            log.warn("No se pudo inyectar el inventario al prompt del chat", e);
+            log.warn("No se pudo recuperar el contexto RAG para el chat", e);
         }
 
         // Añadir el historial previo de la conversación

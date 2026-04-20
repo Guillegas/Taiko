@@ -214,6 +214,20 @@ public class VehiculoService {
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
+     * Búsqueda vectorial pura: convierte la query a embedding y devuelve los vehículos
+     * disponibles más similares. Usada por el chat para inyectar contexto RAG.
+     */
+    public List<Vehiculo> buscarVehiculosRelevantes(String query, int limite) {
+        float[] vector = embeddingModel.embed(query);
+        String vectorString = toVectorString(vector);
+        return vehicleEmbeddingRepository.searchSimilarVehicles(vectorString, limite)
+                .stream()
+                .map(row -> getVehiculoById((UUID) row[0]))
+                .filter(v -> Boolean.TRUE.equals(v.getDisponible()))
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Busca los vehículos combinando búsqueda semántica (vectores) y un
      * filtro estricto con LLM para asegurar que se cumplen criterios como precio o color.
      */
