@@ -58,8 +58,8 @@ export default function AdminPanel() {
 
   const fetchUsers = () => {
     fetch(`${API_URL}/admin/users`, { headers: authHeader() })
-      .then(r => r.json())
-      .then(setUsers)
+      .then(r => { if (!r.ok) return []; return r.json(); })
+      .then(data => { if (Array.isArray(data)) setUsers(data); })
       .catch(() => {});
   };
 
