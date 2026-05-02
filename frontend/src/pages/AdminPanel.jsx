@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Edit2, Trash2, Search, X, ImagePlus, Upload, FileText, CheckCircle2, AlertCircle, Users, Car } from 'lucide-react';
+import { ArrowLeft, Plus, Edit2, Trash2, Search, X, ImagePlus, Upload, FileText, CheckCircle2, AlertCircle, Users, Car, BarChart2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import AnalyticsDashboard from './AnalyticsDashboard';
 
 const API_URL = import.meta.env.VITE_API_URL;
 const FALLBACK_IMAGE = 'https://placehold.co/100x100/1e293b/94a3b8?text=Auto';
@@ -316,7 +317,17 @@ export default function AdminPanel() {
         >
           <Users size={17} /> Usuarios
         </button>
+        <button
+          style={{ flex: 1, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none', cursor: 'pointer', background: activeTab === 'analiticas' ? 'var(--primary-light)' : 'transparent', color: activeTab === 'analiticas' ? 'var(--primary)' : 'var(--text-muted)', borderBottom: activeTab === 'analiticas' ? '2px solid var(--primary)' : '2px solid transparent', fontFamily: 'var(--font-ui)', fontWeight: 600, fontSize: '0.875rem', transition: 'all 0.2s' }}
+          onClick={() => setActiveTab('analiticas')}
+        >
+          <BarChart2 size={17} /> Analíticas
+        </button>
       </div>
+
+      {activeTab === 'analiticas' && (
+        <AnalyticsDashboard authHeader={authHeader} />
+      )}
 
       {activeTab === 'vehiculos' && (<>
       {/* Search bar */}
