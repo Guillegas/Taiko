@@ -44,9 +44,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     // Cuenta usuarios registrados agrupados por día para la serie temporal del dashboard
     @org.springframework.data.jpa.repository.Query(
-        value = "SELECT CAST(created_at AS DATE) AS fecha, COUNT(*) AS cantidad " +
-                "FROM usuarios WHERE created_at >= :desde " +
-                "GROUP BY CAST(created_at AS DATE) ORDER BY fecha ASC",
+        value = "SELECT CAST(fecha_registro AS DATE) AS fecha, COUNT(*) AS cantidad " +
+                "FROM usuarios WHERE fecha_registro >= :desde " +
+                "GROUP BY CAST(fecha_registro AS DATE) ORDER BY fecha ASC",
         nativeQuery = true)
     java.util.List<Object[]> countUsuariosPorDia(@org.springframework.data.repository.query.Param("desde") java.time.LocalDateTime desde);
 }
