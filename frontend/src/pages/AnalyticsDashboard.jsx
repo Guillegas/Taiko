@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Car, Users, MessageSquare, MessageCircle, Loader } from 'lucide-react';
+import { Car, Users, MessageSquare, MessageCircle, Loader, Download } from 'lucide-react';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -45,11 +45,66 @@ export default function AnalyticsDashboard({ authHeader }) {
     { label: 'Mensajes', value: data.totalMensajes, Icon: MessageCircle, color: 'var(--warning)', bg: 'var(--warning-bg)' },
   ];
 
+  const exportCsv = () => {
+    const rows = [];
+
+    rows.push(['RESUMEN GENERAL']);
+    rows.push(['Métrica', 'Valor']);
+    rows.push(['Total vehículos', data.totalVehiculos]);
+    rows.push(['Total usuarios', data.totalUsuarios]);
+    rows.push(['Total conversaciones', data.totalConversaciones]);
+    rows.push(['Total mensajes', data.totalMensajes]);
+    rows.push([]);
+
+    rows.push(['CONVERSACIONES POR DÍA (últimos 30 días)']);
+    rows.push(['Fecha', 'Conversaciones']);
+    data.conversacionesPorDia.forEach(d => rows.push([d.fecha, d.cantidad]));
+    rows.push([]);
+
+    rows.push(['USUARIOS NUEVOS POR DÍA (últimos 30 días)']);
+    rows.push(['Fecha', 'Usuarios']);
+    data.usuariosPorDia.forEach(d => rows.push([d.fecha, d.cantidad]));
+    rows.push([]);
+
+    rows.push(['TOP 5 VEHÍCULOS MÁS RECOMENDADOS']);
+    rows.push(['Marca', 'Modelo', 'Recomendaciones']);
+    data.vehiculosTop.forEach(v => rows.push([v.marca, v.modelo, v.veces]));
+    rows.push([]);
+
+    rows.push(['DISTRIBUCIÓN POR CANAL']);
+    rows.push(['Canal', 'Conversaciones']);
+    data.distribucionCanales.forEach(c => rows.push([c.canal, c.cantidad]));
+
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `taiko-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const tickStyle = { fontSize: 11, fill: 'var(--text-muted)' };
   const gridStyle = { strokeDasharray: '3 3', stroke: 'var(--border-color)' };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+      {/* Cabecera con botón de exportación */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <button
+          onClick={exportCsv}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            padding: '8px 16px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 600,
+            background: 'var(--primary)', color: '#fff', border: 'none', cursor: 'pointer',
+          }}
+        >
+          <Download size={14} />
+          Exportar CSV
+        </button>
+      </div>
 
       {/* KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>

@@ -188,7 +188,7 @@ Proporcionar al administrador una vista consolidada de las métricas de uso de l
 
 | Código | Nombre | Descripción |
 |---|---|---|
-| **RF-015** | Dashboard de analíticas | El administrador accede a una pestaña "Analíticas" en el panel de administración que muestra: (1) tarjetas KPI con el total de vehículos, usuarios, conversaciones y mensajes; (2) gráficos de línea con la evolución de conversaciones y registros de usuarios en los últimos 30 días; (3) un gráfico de barras con los 5 vehículos más recomendados por el chatbot; (4) un gráfico de tarta con la distribución de conversaciones por canal (web vs. Telegram). |
+| **RF-015** | Dashboard de analíticas | El administrador accede a una pestaña "Analíticas" en el panel de administración que muestra: (1) tarjetas KPI con el total de vehículos, usuarios, conversaciones y mensajes; (2) gráficos de línea con la evolución de conversaciones y registros de usuarios en los últimos 30 días; (3) un gráfico de barras con los 5 vehículos más recomendados por el chatbot; (4) un gráfico de tarta con la distribución de conversaciones por canal (web vs. Telegram); (5) botón "Exportar CSV" que descarga todos los datos del dashboard en un archivo `.csv` con fecha en el nombre. |
 | **RF-016** | Generación de descripción con IA | El administrador puede generar automáticamente la descripción comercial de un vehículo pulsando el botón "Generar con IA" en el formulario de alta/edición. El sistema envía los datos básicos del vehículo (marca, modelo, versión, precio, color, kilómetros) a GPT-4o-mini y rellena el campo de descripción con el texto generado, que el administrador puede editar libremente antes de guardar. |
 
 ---
@@ -619,7 +619,7 @@ src/
 
 **AuthContext** gestiona el estado de autenticación de forma global: almacena el token JWT en `localStorage`, lo inyecta en las cabeceras de todas las peticiones autenticadas y expone funciones de login/logout al resto de la aplicación. Las rutas protegidas (`/perfil`, `/admin`) redirigen automáticamente a la raíz si el usuario no está autenticado o no tiene el rol requerido.
 
-**Dashboard de Analíticas (`AnalyticsDashboard.jsx`):** Componente standalone que carga los datos del endpoint `/api/admin/analytics/summary` al montarse. Renderiza cuatro tarjetas KPI, dos gráficos de línea (conversaciones y usuarios nuevos en los últimos 30 días), un gráfico de barras horizontal con el top de vehículos recomendados por el chatbot, y un gráfico de tarta con la distribución web/Telegram. Utiliza la librería **Recharts** para la visualización. Los gráficos usan las CSS variables del sistema de diseño (modo claro/oscuro) y son completamente responsivos mediante `ResponsiveContainer`. Si algún conjunto de datos está vacío, se muestra un mensaje explicativo en lugar de un gráfico vacío.
+**Dashboard de Analíticas (`AnalyticsDashboard.jsx`):** Componente standalone que carga los datos del endpoint `/api/admin/analytics/summary` al montarse. Renderiza cuatro tarjetas KPI, dos gráficos de línea (conversaciones y usuarios nuevos en los últimos 30 días), un gráfico de barras horizontal con el top de vehículos recomendados por el chatbot, y un gráfico de tarta con la distribución web/Telegram. Incluye un botón "Exportar CSV" que genera y descarga un archivo `.csv` con todos los datos del dashboard (KPIs, series temporales, top vehículos y distribución de canales) directamente en el navegador, sin petición adicional al servidor. Utiliza la librería **Recharts** para la visualización. Los gráficos usan las CSS variables del sistema de diseño (modo claro/oscuro) y son completamente responsivos mediante `ResponsiveContainer`. Si algún conjunto de datos está vacío, se muestra un mensaje explicativo en lugar de un gráfico vacío.
 
 **Generación de descripción con IA (`AdminPanel.jsx`):** El formulario de alta y edición de vehículos incluye un botón "Generar con IA" situado junto al campo de descripción. Al pulsarlo, se realiza una petición `POST /api/cars/generate-description` con los campos básicos ya rellenados (marca, modelo, versión, precio, color, kilómetros). La descripción generada se inserta automáticamente en el textarea, donde el administrador puede revisarla o editarla antes de guardar. El botón se deshabilita automáticamente si no se han introducido todavía la marca ni el modelo, y muestra un indicador de carga durante la generación.
 
@@ -761,8 +761,14 @@ El flag `--detach` evita que el proceso bloquee la terminal. Railway ejecuta el 
 
 > **Importante:** ejecutar `railway up` desde dentro de la carpeta `/backend` provoca un error `directory does not exist`. Siempre desde la raíz del proyecto.
 
-**Frontend (Vercel — despliegue automático):**
-Vercel está conectado al repositorio de GitHub y despliega automáticamente con cada push a `main`. El build ejecuta `npm run build` en la carpeta `/frontend`. El archivo `vercel.json` incluye una regla de rewrite que redirige todas las rutas al `index.html`, resolviendo el problema clásico de 404 al recargar una página en aplicaciones SPA con React Router.
+**Frontend (Vercel — despliegue manual con CLI):**
+El despliegue del frontend se realiza manualmente desde la raíz del repositorio con la CLI de Vercel:
+
+```bash
+vercel --prod
+```
+
+El flag `--prod` despliega directamente al entorno de producción. Vercel ejecuta `npm run build` en la carpeta `/frontend`. El archivo `vercel.json` incluye una regla de rewrite que redirige todas las rutas al `index.html`, resolviendo el problema clásico de 404 al recargar una página en aplicaciones SPA con React Router.
 
 ```json
 { "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }
