@@ -45,6 +45,7 @@ The core architecture is **industry-agnostic**. The current implementation is a 
 - **Image management** — multi-image upload per vehicle with primary image selection
 - **User management** — view all users, edit name/email/phone/role, activate or deactivate accounts
 - **Role system** — `admin` and `cliente` roles with full Spring Security enforcement at every endpoint
+- **Analytics dashboard** — KPI cards (vehicles, users, conversations, messages), 30-day time series charts, top-5 recommended vehicles by the chatbot, and channel distribution (web vs Telegram)
 
 ### Platform
 - **JWT authentication** — stateless tokens, configurable expiration, BCrypt password hashing
@@ -92,7 +93,7 @@ The core architecture is **industry-agnostic**. The current implementation is a 
 | Backend | Java 17, Spring Boot 3, Spring MVC, Spring Security, Hibernate JPA |
 | AI / RAG | Spring AI, OpenAI `text-embedding-3-small` (embeddings), `gpt-4o-mini` (chat) |
 | Vector DB | PostgreSQL 16 + `pgvector` extension |
-| Frontend | React 18, Vite, React Router v6, react-markdown, Lucide icons |
+| Frontend | React 18, Vite, React Router v6, react-markdown, Recharts, Lucide icons |
 | Auth | JWT (JJWT), BCrypt, role-based access control |
 | File import | Apache POI (Excel), OpenCSV |
 | Telegram | Telegram Bot API via webhook (Spring RestTemplate) |
@@ -214,6 +215,7 @@ curl -X POST "https://api.telegram.org/botYOUR_TOKEN/setWebhook" \
 | `GET` | `/api/admin/users` | Admin | List all users |
 | `PUT` | `/api/admin/users/{id}` | Admin | Edit user |
 | `DELETE` | `/api/admin/users/{id}` | Admin | Delete user |
+| `GET` | `/api/admin/analytics/summary` | Admin | Analytics dashboard data |
 | `POST` | `/api/upload/image` | User | Upload image |
 | `POST` | `/api/webhook/telegram` | Public | Telegram webhook |
 
