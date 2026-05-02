@@ -74,6 +74,21 @@ public class VehiculoController {
         return ResponseEntity.noContent().build();
     }
 
+    /** Genera una descripción comercial con IA a partir de los datos básicos del vehículo. Solo admin. */
+    @PostMapping("/generate-description")
+    @PreAuthorize("hasAuthority('admin')")
+    public ResponseEntity<Map<String, String>> generateDescription(@RequestBody Map<String, String> payload) {
+        String descripcion = vehiculoService.generarDescripcion(
+                payload.get("marca"),
+                payload.get("modelo"),
+                payload.get("version"),
+                payload.get("precio"),
+                payload.get("color"),
+                payload.get("kilometros")
+        );
+        return ResponseEntity.ok(Map.of("descripcion", descripcion));
+    }
+
     /**
      * Genera embeddings para vehículos que no los tengan. Solo admin.
      * Útil tras importaciones masivas directas en BD.

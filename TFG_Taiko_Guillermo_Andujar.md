@@ -189,6 +189,7 @@ Proporcionar al administrador una vista consolidada de las métricas de uso de l
 | Código | Nombre | Descripción |
 |---|---|---|
 | **RF-015** | Dashboard de analíticas | El administrador accede a una pestaña "Analíticas" en el panel de administración que muestra: (1) tarjetas KPI con el total de vehículos, usuarios, conversaciones y mensajes; (2) gráficos de línea con la evolución de conversaciones y registros de usuarios en los últimos 30 días; (3) un gráfico de barras con los 5 vehículos más recomendados por el chatbot; (4) un gráfico de tarta con la distribución de conversaciones por canal (web vs. Telegram). |
+| **RF-016** | Generación de descripción con IA | El administrador puede generar automáticamente la descripción comercial de un vehículo pulsando el botón "Generar con IA" en el formulario de alta/edición. El sistema envía los datos básicos del vehículo (marca, modelo, versión, precio, color, kilómetros) a GPT-4o-mini y rellena el campo de descripción con el texto generado, que el administrador puede editar libremente antes de guardar. |
 
 ---
 
@@ -526,6 +527,7 @@ La API sigue los principios REST: recursos identificados por URL, verbos HTTP se
 | PUT | `/api/admin/users/{id}` | Admin | Editar usuario |
 | DELETE | `/api/admin/users/{id}` | Admin | Eliminar usuario |
 | GET | `/api/admin/analytics/summary` | Admin | Datos del dashboard de analíticas |
+| POST | `/api/cars/generate-description` | Admin | Genera descripción comercial con GPT-4o-mini |
 | POST | `/api/upload/image` | Usuario | Subir imagen al servidor |
 | POST | `/api/webhook/telegram` | Pública (Telegram) | Recepción de updates del bot |
 | GET | `/api/catalogo/carrocerias` | Pública | Listado de tipos de carrocería |
@@ -553,7 +555,7 @@ com.taiko.backend/
 ```
 
 **Gestión de vehículos (`VehiculoService`):**
-El servicio centraliza toda la lógica de negocio: creación con relaciones, actualización, importación CSV/Excel y generación de embeddings. Cada operación de escritura sobre un vehículo desencadena automáticamente la regeneración de su embedding vectorial en OpenAI, garantizando que el chatbot siempre trabaja con datos actualizados.
+El servicio centraliza toda la lógica de negocio: creación con relaciones, actualización, importación CSV/Excel, generación de embeddings y generación de descripciones comerciales con IA. Cada operación de escritura sobre un vehículo desencadena automáticamente la regeneración de su embedding vectorial en OpenAI, garantizando que el chatbot siempre trabaja con datos actualizados. El método `generarDescripcion` envía los atributos básicos del vehículo a GPT-4o-mini con un prompt comercial estructurado y devuelve 2-3 frases listas para usar como descripción de venta.
 
 **Analytics (`AnalyticsService` y `AnalyticsController`):**
 El servicio centraliza las consultas de agregación necesarias para el dashboard: conteos globales mediante `repository.count()`, series temporales con queries nativas que agrupan por fecha y rellenan los 30 días completos con ceros en los días sin actividad, distribución de canales con JPQL, y extracción del top de vehículos recomendados mediante una query nativa PostgreSQL con `regexp_matches` sobre los mensajes del chatbot. El controlador expone un único endpoint `GET /api/admin/analytics/summary` que devuelve toda la información en una sola respuesta JSON, protegido con `@PreAuthorize("hasAuthority('admin')")`.
@@ -619,6 +621,8 @@ src/
 
 **Dashboard de Analíticas (`AnalyticsDashboard.jsx`):** Componente standalone que carga los datos del endpoint `/api/admin/analytics/summary` al montarse. Renderiza cuatro tarjetas KPI, dos gráficos de línea (conversaciones y usuarios nuevos en los últimos 30 días), un gráfico de barras horizontal con el top de vehículos recomendados por el chatbot, y un gráfico de tarta con la distribución web/Telegram. Utiliza la librería **Recharts** para la visualización. Los gráficos usan las CSS variables del sistema de diseño (modo claro/oscuro) y son completamente responsivos mediante `ResponsiveContainer`. Si algún conjunto de datos está vacío, se muestra un mensaje explicativo en lugar de un gráfico vacío.
 
+**Generación de descripción con IA (`AdminPanel.jsx`):** El formulario de alta y edición de vehículos incluye un botón "Generar con IA" situado junto al campo de descripción. Al pulsarlo, se realiza una petición `POST /api/cars/generate-description` con los campos básicos ya rellenados (marca, modelo, versión, precio, color, kilómetros). La descripción generada se inserta automáticamente en el textarea, donde el administrador puede revisarla o editarla antes de guardar. El botón se deshabilita automáticamente si no se han introducido todavía la marca ni el modelo, y muestra un indicador de carga durante la generación.
+
 **Página de Chat:** Es la más compleja del frontend. Implementa un sidebar de conversaciones (solo para usuarios autenticados), la lógica de creación/carga/borrado de conversaciones, el envío de mensajes con indicador de escritura, la visualización de tarjetas de vehículos recomendados con enlace al detalle, y los tres formatos de exportación (PDF generado en navegador, TXT y JSON desde la API).
 
 **Galería de imágenes (CarDetail):** Incluye imagen principal de 440px, navegación con flechas izquierda/derecha, contador de posición, tira de miniaturas con borde activo, lightbox a pantalla completa con navegación por teclado (←→ y ESC) y tooltip de zoom al pasar el ratón.
@@ -668,7 +672,24 @@ GET  /api/chat/*/export/**     → Autenticado
 
 ## 8. Pruebas
 
-### 8.1 Pruebas funcionales
+### 8.1 Pruebas unitarias automatizadas
+
+Se han implementado **27 tests unitarios** con **JUnit 5** y **Mockito** cubriendo los cuatro servicios principales de la aplicación. Todos los tests mockean sus dependencias externas (repositorios, OpenAI, PasswordEncoder) y se ejecutan de forma aislada, sin necesidad de base de datos ni conexión a red.
+
+| Clase de test | Tests | Cobertura principal |
+|---|---|---|
+| `AnalyticsServiceTest` | 7 | KPIs correctos, serie de 30 días, mapeo de `Object[]` a DTOs, datos reales |
+| `UserServiceTest` | 6 | Perfil encontrado y 404, actualización de nombre, cambio de contraseña correcto e incorrecto, contraseña corta |
+| `VehiculoServiceTest` | 5 | Listado, búsqueda por ID, 404 en búsqueda, eliminación correcta, 404 en eliminación |
+| `ChatbotServiceTest` | 8 | Conversación anónima y con usuario, listado vacío, borrado correcto, 404 usuario y conversación, exportación TXT |
+
+Los tests se ejecutan con:
+```bash
+cd backend && ./mvnw test
+```
+Resultado: **27 tests, 0 fallos, 0 errores**.
+
+### 8.2 Pruebas funcionales
 
 Se han realizado pruebas manuales sobre todos los flujos de usuario documentados en los casos de uso, verificando tanto el camino feliz como los casos límite y de error:
 
@@ -685,19 +706,21 @@ Se han realizado pruebas manuales sobre todos los flujos de usuario documentados
 | Recarga de página en ruta React | SPA redirige correctamente (sin 404) | ✓ Correcto |
 | Cambio de contraseña con contraseña actual incorrecta | Error 400 con mensaje | ✓ Correcto |
 | Subida de imagen con tipo no permitido | Error 400 con mensaje | ✓ Correcto |
+| Generación de descripción con IA | Descripción generada y rellenada en el formulario | ✓ Correcto |
 
-### 8.2 Pruebas de seguridad
+### 8.3 Pruebas de seguridad
 
 - Se verificó que ningún endpoint de escritura puede ser llamado sin JWT válido.
 - Se comprobó que un token de rol `cliente` no puede acceder a rutas `admin`.
 - Se verificó que un usuario no puede eliminar conversaciones de otro usuario (validación de propiedad en la consulta).
 - Se comprobó que las contraseñas no se devuelven en ninguna respuesta de la API.
 
-### 8.3 Pruebas de la integración con IA
+### 8.4 Pruebas de la integración con IA
 
 - Se realizaron consultas en lenguaje natural con criterios combinados (precio + color + tipo) verificando que el filtro LLM elimina correctamente los falsos positivos del resultado vectorial.
 - Se comprobó que el fallback por similitud (umbral 65 %) funciona cuando el LLM devuelve un formato inesperado.
 - Se verificó la integración completa del bot de Telegram con consultas reales al inventario.
+- Se comprobó que la generación de descripciones produce texto coherente y ajustado a los atributos proporcionados.
 
 ---
 
@@ -726,9 +749,20 @@ La aplicación está desplegada en un entorno cloud completamente gestionado:
 
 ### 9.3 Proceso de despliegue
 
-**Backend:** Railway detecta el repositorio de GitHub y ejecuta el build de Maven automáticamente con cada push a `main`. El `Procfile` y la configuración de puerto dinámico (`${PORT:8080}`) son compatibles con el entorno Railway.
+**Backend (Railway — despliegue manual con CLI):**
+Railway **no** está configurado con auto-deploy desde GitHub en este proyecto. El despliegue se realiza manualmente desde la raíz del repositorio con la CLI de Railway:
 
-**Frontend:** Vercel detecta el proyecto Vite y ejecuta `npm run build` automáticamente. El archivo `vercel.json` incluye una regla de rewrite que redirige todas las rutas al `index.html`, resolviendo el problema clásico de 404 al recargar una página en aplicaciones SPA con React Router.
+```bash
+# Desde la raíz del proyecto (no desde /backend)
+railway up --detach
+```
+
+El flag `--detach` evita que el proceso bloquee la terminal. Railway ejecuta el build de Maven y despliega el JAR resultante. La configuración de puerto dinámico (`${PORT:8080}`) y el `Procfile` son compatibles con el entorno Railway.
+
+> **Importante:** ejecutar `railway up` desde dentro de la carpeta `/backend` provoca un error `directory does not exist`. Siempre desde la raíz del proyecto.
+
+**Frontend (Vercel — despliegue automático):**
+Vercel está conectado al repositorio de GitHub y despliega automáticamente con cada push a `main`. El build ejecuta `npm run build` en la carpeta `/frontend`. El archivo `vercel.json` incluye una regla de rewrite que redirige todas las rutas al `index.html`, resolviendo el problema clásico de 404 al recargar una página en aplicaciones SPA con React Router.
 
 ```json
 { "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }
@@ -762,10 +796,9 @@ Las siguientes líneas de mejora quedan identificadas para iteraciones futuras:
 
 - **Aplicación móvil nativa** (Android/iOS) con React Native o Kotlin, completando la visión multiplataforma original del proyecto.
 - **Integración con WhatsApp Business API**, ampliando los canales del chatbot al tercero más usado en España.
-- **Panel de analíticas** para el administrador: preguntas más frecuentes, productos más consultados, tasa de conversión del chatbot.
 - **Multi-tenant real**: que cada comercio tenga su propio catálogo aislado dentro de la misma instancia de la plataforma, con facturación diferenciada (modelo SaaS puro).
 - **Fine-tuning del modelo de embeddings** sobre conversaciones reales del sector para mejorar la precisión semántica en el dominio específico.
-- **Tests automatizados**: ampliar la cobertura con tests de integración (Spring Boot Test + Testcontainers para PostgreSQL) y tests de componente en el frontend (Vitest + Testing Library).
+- **Ampliar cobertura de tests**: añadir tests de integración con Testcontainers (PostgreSQL real) y tests de componente en el frontend con Vitest + Testing Library.
 - **Autenticación OAuth2** (Google, GitHub) como método de acceso adicional.
 
 ---

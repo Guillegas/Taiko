@@ -409,6 +409,29 @@ public class VehiculoService {
     }
 
     /**
+     * Genera una descripción comercial para un vehículo usando GPT-4o-mini.
+     * Recibe los campos básicos del formulario y devuelve texto listo para usar.
+     */
+    public String generarDescripcion(String marca, String modelo, String version,
+                                     String precio, String color, String kilometros) {
+        String prompt = String.format("""
+                Eres un experto en ventas de coches de un concesionario.
+                Escribe una descripción comercial atractiva y concisa (2-3 frases) para este vehículo:
+                - Marca y modelo: %s %s %s
+                - Precio: %s€
+                - Color: %s
+                - Kilometraje: %s km
+
+                La descripción debe destacar los puntos fuertes del coche y ayudar al comprador a decidirse.
+                Responde ÚNICAMENTE con la descripción, sin títulos ni explicaciones adicionales.
+                """,
+                nullSafe(marca), nullSafe(modelo), nullSafe(version),
+                nullSafe(precio), nullSafe(color), nullSafe(kilometros));
+
+        return chatModel.call(prompt).trim();
+    }
+
+    /**
      * Importación masiva de vehículos desde un archivo CSV.
      * Formato esperado: Marca,Modelo,Version,Precio,Kilometros,Color,Descripcion,CarroceriaId
      */

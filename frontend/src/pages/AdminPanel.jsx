@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Edit2, Trash2, Search, X, ImagePlus, Upload, FileText, CheckCircle2, AlertCircle, Users, Car, BarChart2 } from 'lucide-react';
+import { ArrowLeft, Plus, Edit2, Trash2, Search, X, ImagePlus, Upload, FileText, CheckCircle2, AlertCircle, Users, Car, BarChart2, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import AnalyticsDashboard from './AnalyticsDashboard';
 
@@ -37,6 +37,7 @@ export default function AdminPanel() {
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [generatingDesc, setGeneratingDesc] = useState(false);
 
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFile, setImportFile] = useState(null);
@@ -162,6 +163,31 @@ export default function AdminPanel() {
         headers: { 'Content-Type': 'application/json', ...authHeader() },
         body: JSON.stringify(body),
       });
+    }
+  };
+
+  const handleGenerateDescription = async () => {
+    setGeneratingDesc(true);
+    try {
+      const res = await fetch(`${API_URL}/cars/generate-description`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify({
+          marca: form.marca,
+          modelo: form.modelo,
+          version: form.version,
+          precio: form.precio,
+          color: form.color,
+          kilometros: form.kilometros,
+        }),
+      });
+      if (!res.ok) throw new Error('Error al generar descripción');
+      const data = await res.json();
+      setForm(f => ({ ...f, descripcion: data.descripcion }));
+    } catch {
+      setError('No se pudo generar la descripción. Inténtalo de nuevo.');
+    } finally {
+      setGeneratingDesc(false);
     }
   };
 
@@ -784,7 +810,23 @@ export default function AdminPanel() {
 
               {/* Descripción */}
               <div>
-                <label className="label">Descripción</label>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label className="label" style={{ margin: 0 }}>Descripción</label>
+                  <button
+                    type="button"
+                    onClick={handleGenerateDescription}
+                    disabled={generatingDesc || (!form.marca && !form.modelo)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                      padding: '4px 12px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 600,
+                      background: 'var(--primary)', color: '#fff', border: 'none', cursor: 'pointer',
+                      opacity: (generatingDesc || (!form.marca && !form.modelo)) ? 0.5 : 1,
+                    }}
+                  >
+                    <Sparkles size={13} />
+                    {generatingDesc ? 'Generando...' : 'Generar con IA'}
+                  </button>
+                </div>
                 <textarea
                   className="input-field"
                   rows={3}
