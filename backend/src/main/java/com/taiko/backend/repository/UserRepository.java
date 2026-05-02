@@ -41,4 +41,12 @@ public interface UserRepository extends JpaRepository<User, UUID> {
         nativeQuery = true)
     void updateActivo(@org.springframework.data.repository.query.Param("id") java.util.UUID id,
                       @org.springframework.data.repository.query.Param("activo") boolean activo);
+
+    // Cuenta usuarios registrados agrupados por día para la serie temporal del dashboard
+    @org.springframework.data.jpa.repository.Query(
+        value = "SELECT CAST(created_at AS DATE) AS fecha, COUNT(*) AS cantidad " +
+                "FROM usuarios WHERE created_at >= :desde " +
+                "GROUP BY CAST(created_at AS DATE) ORDER BY fecha ASC",
+        nativeQuery = true)
+    java.util.List<Object[]> countUsuariosPorDia(@org.springframework.data.repository.query.Param("desde") java.time.LocalDateTime desde);
 }
