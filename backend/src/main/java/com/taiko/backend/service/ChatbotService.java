@@ -25,6 +25,26 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+/**
+ * Servicio de conversación del asistente virtual de Taiko Motors.
+ *
+ * <p>Implementa un patrón <b>Retrieval-Augmented Generation (RAG)</b>:
+ * antes de invocar al modelo de lenguaje se inyecta como contexto un
+ * subconjunto de vehículos del stock recuperados por similitud vectorial
+ * (pgvector + Spring AI). De este modo el LLM solo recomienda coches
+ * que existen realmente en la base de datos.</p>
+ *
+ * <p>Cada respuesta del asistente puede contener una etiqueta especial
+ * {@code [COCHES:uuid1,uuid2,...]} al final del mensaje. El método
+ * {@link #parsearRespuesta(String)} la extrae para devolver al frontend
+ * la respuesta limpia y la lista de vehículos referenciados, que se
+ * renderizan como tarjetas interactivas en la UI.</p>
+ *
+ * <p>Las conversaciones se persisten en la tabla {@code conversaciones}
+ * (anónimas o asociadas a un usuario) y los mensajes en {@code mensajes},
+ * lo que permite reanudar el chat, mostrar histórico al usuario y
+ * exportar la conversación a TXT o JSON.</p>
+ */
 @Service
 public class ChatbotService {
 

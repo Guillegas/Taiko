@@ -35,6 +35,31 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Servicio principal de gestión de vehículos.
+ *
+ * <p>Encapsula tanto las operaciones CRUD como la lógica de búsqueda
+ * semántica con Spring AI y pgvector:</p>
+ *
+ * <ul>
+ *   <li>Cada vez que se crea o actualiza un vehículo se genera un
+ *       <em>embedding</em> con OpenAI ({@code text-embedding-3-small}) a
+ *       partir de un texto descriptivo enriquecido (marca, modelo,
+ *       carrocería, equipamiento, etc.) y se persiste en la tabla
+ *       {@code vehicle_embeddings} como {@code vector(1536)}.</li>
+ *   <li>La búsqueda combina dos fases (RAG híbrido):
+ *     <ol>
+ *       <li><b>Vector search</b> en pgvector para recuperar candidatos
+ *           similares semánticamente al texto del usuario.</li>
+ *       <li><b>LLM judge</b> que filtra estrictamente los candidatos
+ *           cuando el usuario impone restricciones duras como precio
+ *           máximo o color concreto.</li>
+ *     </ol>
+ *   </li>
+ *   <li>Soporta importación masiva desde CSV y Excel con generación
+ *       automática de embeddings por cada fila.</li>
+ * </ul>
+ */
 @Service
 public class VehiculoService {
 

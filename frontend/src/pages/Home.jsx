@@ -173,7 +173,7 @@ export default function Home() {
         // Tomar los primeros 3 (después de reverse para que sean los últimos añadidos con imágenes)
         setFeaturedCars(data.reverse().slice(0, 3));
       })
-      .catch(console.error);
+      .catch(() => setFeaturedCars([]));
   }, []);
 
   return (

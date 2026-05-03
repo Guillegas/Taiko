@@ -19,8 +19,8 @@ export default function CarDetail() {
         setCar(data);
         setLoading(false);
       })
-      .catch(error => {
-        console.error(error);
+      .catch(() => {
+        setCar(null);
         setLoading(false);
       });
   }, [id]);

@@ -1,5 +1,15 @@
 import { createContext, useContext, useState } from 'react';
 
+/**
+ * Contexto de autenticación global de la aplicación.
+ *
+ * Centraliza el usuario logueado, el JWT y el estado del modal de login,
+ * y los expone a toda la app a través del hook `useAuth()`.
+ *
+ * El token se persiste en `localStorage` para sobrevivir a recargas de
+ * página. La caducidad efectiva la controla el backend (claim `exp` del JWT):
+ * cuando el token expira, las peticiones devuelven 401 y el frontend pide login.
+ */
 const AuthContext = createContext();
 const API_URL = import.meta.env.VITE_API_URL;
 

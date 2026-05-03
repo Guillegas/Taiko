@@ -1,3 +1,19 @@
+/**
+ * Panel de administración del concesionario.
+ *
+ * Acceso restringido al rol "admin" tanto en el frontend (AdminRoute)
+ * como en el backend (Spring Security + @PreAuthorize). Si un cliente
+ * intenta acceder, el backend rechaza con 403.
+ *
+ * Pestañas principales:
+ *  - Vehículos: alta, edición, eliminación, asignación de imágenes,
+ *               importación masiva (CSV/XLSX) y generación de
+ *               descripciones comerciales con IA.
+ *  - Usuarios:  listado, edición de datos básicos y cambio de rol.
+ *  - Analytics: dashboard de KPIs (delegado en AnalyticsDashboard).
+ *
+ * Todas las operaciones envían el JWT en la cabecera Authorization.
+ */
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Plus, Edit2, Trash2, Search, X, ImagePlus, Upload, FileText, CheckCircle2, AlertCircle, Users, Car, BarChart2, Sparkles } from 'lucide-react';

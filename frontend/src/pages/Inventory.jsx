@@ -29,7 +29,10 @@ export default function Inventory() {
         setCars(data.reverse());
         setLoading(false);
       })
-      .catch(console.error);
+      .catch(() => {
+        setCars([]);
+        setLoading(false);
+      });
   }, []);
 
   // Búsqueda semántica con debounce

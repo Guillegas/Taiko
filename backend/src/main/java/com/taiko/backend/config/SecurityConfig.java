@@ -21,6 +21,31 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+/**
+ * Configuración central de seguridad de la aplicación.
+ *
+ * <p>Define la cadena de filtros HTTP, las reglas de autorización por
+ * endpoint, la política CORS y los beans de soporte (encoder de
+ * contraseñas y manager de autenticación).</p>
+ *
+ * <p>Decisiones de diseño:</p>
+ * <ul>
+ *   <li><b>Stateless</b>: la API no usa sesiones HTTP. La identidad del
+ *       usuario se transporta en cada petición mediante un JWT firmado
+ *       con HS256, validado por {@link com.taiko.backend.security.JwtRequestFilter}.</li>
+ *   <li><b>BCrypt</b>: las contraseñas se almacenan hasheadas con
+ *       {@link BCryptPasswordEncoder}, que aplica salt aleatorio y un
+ *       coste configurable resistente a fuerza bruta.</li>
+ *   <li><b>RBAC</b>: el rol (admin / cliente) se inyecta como
+ *       <em>authority</em> en el contexto de seguridad y se valida tanto
+ *       a nivel de URL como con {@code @PreAuthorize} gracias a
+ *       {@link EnableMethodSecurity}.</li>
+ *   <li><b>CORS restringido</b>: solo se aceptan peticiones desde el
+ *       frontend en producción (Vercel) y entornos locales conocidos.</li>
+ *   <li><b>CSRF deshabilitado</b>: es seguro al ser una API REST
+ *       stateless sin cookies de sesión.</li>
+ * </ul>
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity // Activa @PreAuthorize en controllers y services
@@ -96,10 +121,17 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // En producción idealmente se restringe al dominio del frontend
-        config.setAllowedOriginPatterns(List.of("*"));
+        // Orígenes permitidos: frontend en producción (Vercel) y entornos de desarrollo local.
+        // Restringir CORS a una lista cerrada evita que dominios arbitrarios
+        // realicen peticiones autenticadas contra la API.
+        config.setAllowedOrigins(List.of(
+            "https://frontend-xi-navy-88.vercel.app",
+            "http://localhost:5173",
+            "http://localhost:3000"
+        ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"));
+        config.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;

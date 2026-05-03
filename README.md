@@ -221,6 +221,51 @@ curl -X POST "https://api.telegram.org/botYOUR_TOKEN/setWebhook" \
 
 ---
 
+## Running tests
+
+The backend includes unit tests for the main services using JUnit 5 and Mockito.
+
+```bash
+cd backend
+./mvnw test
+```
+
+Test classes cover:
+
+- `ChatbotServiceTest` — message flow, conversation persistence and export
+- `VehiculoServiceTest` — CRUD, semantic search and embedding generation
+- `UserServiceTest` — profile updates and password changes
+- `AnalyticsServiceTest` — KPI aggregation
+- `BackendApplicationTests` — Spring context loading
+
+To generate a coverage report (if JaCoCo is configured):
+
+```bash
+./mvnw test jacoco:report
+```
+
+---
+
+## Security
+
+The platform implements defense-in-depth across the stack:
+
+| Layer | Measure |
+|---|---|
+| Passwords | BCrypt hashing with per-user salt; plaintext never stored or logged |
+| Sessions | Stateless JWT signed with HS256; configurable expiration via `jwt.expiration-ms` |
+| Authorization | Role-based access control (`admin`, `cliente`) enforced both at URL level (Spring Security) and at method level (`@PreAuthorize`) |
+| Input validation | Jakarta Bean Validation (`@Email`, `@NotBlank`, `@Size`, `@Pattern`) on every public DTO; rejected before reaching controllers |
+| Errors | Global `@RestControllerAdvice` returns consistent JSON; internal stack traces never exposed to clients |
+| CORS | Closed allow-list (Vercel production URL + local dev); no wildcards |
+| SQL injection | All queries parameterised through Spring Data JPA / `@Query` named parameters |
+| Secrets | All credentials (DB, OpenAI, JWT, Telegram) loaded from environment variables; `application-secrets.properties` gitignored |
+| File uploads | Server-side MIME-type allow-list (`image/jpeg`, `png`, `webp`, `gif`), 5 MB max size, UUID-based filenames to prevent path traversal |
+| Identifiers | UUIDs (not sequential IDs) for users, conversations and vehicles, preventing enumeration attacks |
+| Anonymous chat | Conversation UUIDs act as unguessable session tokens; ownership checks enforced server-side on delete and export |
+
+---
+
 ## Author
 
 **Guillermo Andújar Martínez**

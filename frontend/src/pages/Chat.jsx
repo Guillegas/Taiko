@@ -7,6 +7,11 @@ import { useAuth } from '../context/AuthContext';
 const API_URL = import.meta.env.VITE_API_URL;
 const WELCOME_TEXT = '¡Hola! Soy el asistente virtual de Taiko Motors. Estoy conectado al inventario en tiempo real. ¿En qué puedo ayudarte para encontrar tu coche ideal?';
 
+// Límite de mensajes para usuarios anónimos. Cuando se alcanza,
+// se invita a registrarse o iniciar sesión para seguir conversando.
+const ANON_MESSAGE_LIMIT = 5;
+const ANON_LIMIT_TEXT = `Has alcanzado el límite de ${ANON_MESSAGE_LIMIT} mensajes como invitado. Para seguir conversando con el asistente, **inicia sesión** o **crea una cuenta gratuita** y disfruta de historial guardado, exportaciones y mucho más.`;
+
 export default function ChatPage() {
   const { user, setIsLoginModalOpen, setLoginModalTab } = useAuth();
   const navigate = useNavigate();
@@ -173,9 +178,22 @@ export default function ChatPage() {
     }
   };
 
+  // Cuenta cuántos mensajes ha enviado ya el usuario en la conversación actual.
+  // Se usa para limitar a usuarios anónimos.
+  const userMessageCount = messages.filter(m => m.role === 'user').length;
+  const anonLimitReached = !user && userMessageCount >= ANON_MESSAGE_LIMIT;
+
   const handleSend = async (e) => {
     e.preventDefault();
     if (!inputMsg.trim() || !convId) return;
+
+    // Anónimos: cortar al alcanzar el límite y proponer registro / login
+    if (anonLimitReached) {
+      setMessages(prev => [...prev, { role: 'assistant', text: ANON_LIMIT_TEXT, vehiculos: [] }]);
+      setLoginModalTab('signup');
+      setIsLoginModalOpen(true);
+      return;
+    }
 
     const userText = inputMsg.trim();
     setInputMsg('');
@@ -414,13 +432,15 @@ ${messages.map(m => `<div class="msg ${m.role}"><div class="label">${m.role === 
             <input
               type="text"
               className="input-field chat-input full-page-input"
-              placeholder="Pregunta por un coche automático, que gaste poco y por menos de 20.000€..."
+              placeholder={anonLimitReached
+                ? `Has alcanzado el límite de ${ANON_MESSAGE_LIMIT} mensajes como invitado. Inicia sesión para seguir conversando.`
+                : "Pregunta por un coche automático, que gaste poco y por menos de 20.000€..."}
               value={inputMsg}
               onChange={e => setInputMsg(e.target.value)}
-              disabled={isTyping}
+              disabled={isTyping || anonLimitReached}
               autoFocus
             />
-            <button type="submit" className="btn-primary send-btn" disabled={!inputMsg.trim() || isTyping}>
+            <button type="submit" className="btn-primary send-btn" disabled={!inputMsg.trim() || isTyping || anonLimitReached}>
               <Send size={24} />
             </button>
           </form>
