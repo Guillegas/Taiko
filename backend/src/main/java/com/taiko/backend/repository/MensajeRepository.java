@@ -11,6 +11,7 @@ public interface MensajeRepository extends JpaRepository<Mensaje, UUID> {
     List<Mensaje> findByConversacionIdOrderByFechaEnvioAsc(UUID conversacionId);
     Mensaje findFirstByConversacionIdAndEmisorOrderByFechaEnvioAsc(UUID conversacionId, com.taiko.backend.model.EmisorMensaje emisor);
     long countByConversacionId(UUID conversacionId);
+    long countByConversacionIdAndEmisor(UUID conversacionId, com.taiko.backend.model.EmisorMensaje emisor);
 
     @org.springframework.data.jpa.repository.Modifying
     @jakarta.transaction.Transactional

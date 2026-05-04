@@ -77,6 +77,11 @@ public class ChatbotService {
     // Patrón para extraer la etiqueta [COCHES:...] de las respuestas del LLM
     private static final Pattern COCHES_TAG = Pattern.compile("\\[COCHES:([^\\]]+)\\]");
 
+    // Límite de mensajes para conversaciones anónimas (sin usuario autenticado).
+    // Se aplica en servidor para impedir saltarse el límite del frontend con curl
+    // y evitar abusos sobre la cuota de OpenAI.
+    private static final int ANON_MESSAGE_LIMIT = 5;
+
     /** Inicia una conversación anónima (sin usuario asociado). */
     @Transactional
     public Conversacion iniciarConversacion() {
@@ -133,6 +138,15 @@ public class ChatbotService {
     public ChatResponseDTO enviarMensaje(UUID conversacionId, String textoUsuario) {
         Conversacion conversacion = conversacionRepository.findById(conversacionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversación no encontrada"));
+
+        // Conversaciones anónimas: limitar el número de mensajes en servidor.
+        if (conversacion.getUsuario() == null) {
+            long previos = mensajeRepository.countByConversacionIdAndEmisor(conversacionId, EmisorMensaje.cliente);
+            if (previos >= ANON_MESSAGE_LIMIT) {
+                throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                        "Has alcanzado el límite de mensajes como invitado. Regístrate o inicia sesión para continuar.");
+            }
+        }
 
         // Persistir el mensaje del usuario
         Mensaje mensajeUsuario = new Mensaje();
