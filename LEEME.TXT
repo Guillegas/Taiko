@@ -1,0 +1,57 @@
+PROYECTO: Taiko — Plataforma SaaS con IA para gestión de catálogos y atención al cliente
+AUTOR: Guillermo Andújar Martínez
+CICLO: CFGS Desarrollo de Aplicaciones Multiplataforma (DAM)
+CENTRO: I.E.S. Hermanos Machado, Dos Hermanas (Sevilla)
+CURSO: 2025 / 2026
+
+════════════════════════════════════════
+APLICACIÓN DESPLEGADA
+════════════════════════════════════════
+URL Frontend:  https://frontend-xi-navy-88.vercel.app
+Repositorio:   https://github.com/Guillegas/Taiko
+
+════════════════════════════════════════
+CREDENCIALES DE PRUEBA
+════════════════════════════════════════
+ADMINISTRADOR
+  Email:      superadmin@taiko.com
+  Contraseña: Admin1234
+
+CLIENTE
+  Email:      [busca en el seed data del proyecto]
+  Contraseña: [busca en el seed data del proyecto]
+
+════════════════════════════════════════
+INSTRUCCIONES PARA PROBAR LA APLICACIÓN
+════════════════════════════════════════
+1. Abre https://frontend-xi-navy-88.vercel.app en el navegador.
+2. Haz clic en "Iniciar Sesión".
+3. Entra como CLIENTE:
+   - Navega por el catálogo con filtros (marca, precio, carrocería, etc.).
+   - Usa el chat para preguntar al asistente de IA
+     (ej: "busco un SUV automático por menos de 40.000 euros").
+   - Consulta el historial de conversaciones.
+4. Cierra sesión y entra como ADMINISTRADOR:
+   - Accede al Panel de Administración.
+   - Crea, edita o elimina un vehículo del catálogo.
+   - Prueba la importación masiva subiendo un CSV.
+   - Revisa el dashboard de analítica.
+
+════════════════════════════════════════
+TECNOLOGÍAS UTILIZADAS
+════════════════════════════════════════
+Frontend:    React 18 + Vite + React Router v6
+Backend:     Java 17 + Spring Boot 3 + Spring Security + Hibernate JPA
+Base datos:  PostgreSQL 16 + extensión pgvector (vector(1536))
+IA / RAG:    Spring AI + OpenAI (text-embedding-3-small + gpt-4o-mini)
+Despliegue:  Railway (backend + BD) · Vercel (frontend)
+
+════════════════════════════════════════
+NOTAS ADICIONALES
+════════════════════════════════════════
+- El chatbot responde únicamente sobre vehículos existentes en la base de
+  datos — no inventa información gracias al motor RAG con juez LLM.
+- La primera respuesta del chat puede tardar 3-5 segundos por las dos
+  llamadas a la API de OpenAI (embedding + generación).
+- Si el backend tarda en responder la primera vez, espera hasta 30 segundos
+  — Railway puede poner el servicio en modo sleep por inactividad.
